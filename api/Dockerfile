@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:3.11
 
 ENV POETRY_HOME=/opt/poetry
 ENV POETRY_VENV=/opt/poetry-venv

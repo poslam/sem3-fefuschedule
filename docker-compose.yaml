@@ -1,0 +1,17 @@
+services:
+
+    database:
+        image: database
+        build: ./database
+        environment:
+            POSTGRES_HOST_AUTH_METHOD: trust
+
+    api:
+        links:
+            - database
+       
+        image: api
+        ports:
+            - 8000:8000
+        build: ./api
+        restart: always
