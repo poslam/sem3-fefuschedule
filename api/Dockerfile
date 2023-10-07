@@ -19,4 +19,4 @@ RUN poetry install
 
 COPY . /api
 
-CMD ["poetry", "run", "python", "-m", "uvicorn", "--workers", "8", "src.app:app", "--port", "8000", "--host", "0.0.0.0"]
+CMD ["poetry", "run", "python", "-m", "uvicorn", "src.app:app", "--port", "8001", "--host", "0.0.0.0"]
