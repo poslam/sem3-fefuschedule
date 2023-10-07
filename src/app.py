@@ -10,41 +10,64 @@ from src.external import get_schedule
 app = FastAPI()
 
 
-@app.get("/schedule")
-async def schedule(facility_name: str = None,
+@app.get("/view")
+async def schedule(type: str, #schedule, groups, facilities
+                   begin: str, end: str, # 2023-10-07T00:00:00
+                   facility_name: str = None,
                    group_name: str = None,
                    session: AsyncSession = Depends(get_session)):
     
-    if facility_name != None and group_name == None:
-        
-        facility_raw = (await session.execute(
-            select(Class.num)
-            .where(Class.name == facility_name)
-            .filter(Class.name.ilike('%' + facility_name + '%'))
-        )).first()
-        
-        if facility_raw == None:
-            raise HTTPException(status_code=400, detail="facility not found")
-        
-        facility_id = facility_raw._mapping["num"]
-        
-        return await get_schedule(facility=facility_id)
+    if type == "schedule":
     
-    elif facility_name == None and group_name != None:
+        if facility_name != None and group_name == None:
+            
+            facility_raw = (await session.execute(
+                select(Class.num)
+                .filter(Class.name.ilike('%' + facility_name + '%'))
+            )).first()
+            
+            if facility_raw == None:
+                raise HTTPException(status_code=400, detail="facility not found")
+            
+            facility_id = facility_raw._mapping["num"]
+            
+            return await get_schedule(facility=facility_id, begin=begin, end=end)
         
-        group_raw = (await session.execute(
-            select(Group.num).where(Group.name == group_name)
-        )).first()
+        elif facility_name == None and group_name != None:
+            
+            group_raw = (await session.execute(
+                select(Group.num).where(Group.name == group_name)
+            )).first()
+            
+            if group_raw == None:
+                raise HTTPException(status_code=400, detail="group not found")
+            
+            group_id = group_raw._mapping["num"]
+            
+            return await get_schedule(group=group_id, begin=begin, end=end)
         
-        if group_raw == None:
-            raise HTTPException(status_code=400, detail="group not found")
+        else:
+            raise HTTPException(status_code=400, detail="only one param should be used")
         
-        group_id = group_raw._mapping["num"]
+    elif type == "groups":
         
-        return await get_schedule(group=group_id)
+        groups_raw = (await session.execute(
+            select(Group.name, Group.num)
+        )).all()
+        
+        groups = [x._mapping for x in groups_raw]
+        
+        return groups
     
-    else:
-        raise HTTPException(status_code=400, detail="only one param should be used")
+    elif type == "facilities":
+        
+        facilities_raw = (await session.execute(
+            select(Class.name, Class.num)
+        )).all()
+        
+        facilities = [x._mapping for x in facilities_raw]
+        
+        return facilities
 
 
 @app.get("/install_gropus")
