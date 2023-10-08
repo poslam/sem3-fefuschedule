@@ -14,6 +14,15 @@ from dateutil import parser
 app = FastAPI()
 
 
+@app.get("/serverStatus")
+async def test(session: AsyncSession = Depends(get_session)):
+    try:
+        await session.execute(select(Facility))
+        return {"detail": "server and database are working!"}
+    except:
+        return {"detail": "connection to the database is corrupted"}
+
+
 @app.get("/view")
 async def schedule(type: str,  # schedule, groups, facilities
                    begin: str, end: str,  # 2023-10-07T00:00:00
@@ -106,15 +115,8 @@ async def check_facility(day: datetime,
                          order: int,
                          session: AsyncSession = Depends(get_session)):
 
-    day_num = day.weekday()
-
-    end = day
-
-    while (day_num < 6):
-        day_num += 1
-        end = end + timedelta(days=1)
-
-    begin = end - timedelta(days=6)
+    begin = day
+    end = day + timedelta(days=1)
 
     if facility_name != None:
 
