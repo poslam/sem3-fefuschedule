@@ -3,9 +3,9 @@ from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from config import STATIC_PATH
 
-from database.database import get_session
-from database.models import Class, Group
-from src.external import get_schedule
+from api.database.database import get_session
+from api.database.models import Class, Group
+from api.src.external import get_schedule
 
 app = FastAPI()
 
@@ -18,6 +18,8 @@ async def schedule(type: str, #schedule, groups, facilities
                    session: AsyncSession = Depends(get_session)):
     
     if type == "schedule":
+        
+        return 1
     
         if facility_name != None and group_name == None:
             
