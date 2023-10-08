@@ -18,8 +18,6 @@ async def schedule(type: str, #schedule, groups, facilities
                    session: AsyncSession = Depends(get_session)):
     
     if type == "schedule":
-        
-        return 1
     
         if facility_name != None and group_name == None:
             
