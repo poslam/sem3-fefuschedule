@@ -1,4 +1,4 @@
-from api.database.database import base
+from database.database import base
 from sqlalchemy import (
     Column,
     Float,

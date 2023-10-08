@@ -3,9 +3,9 @@ from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from config import STATIC_PATH
 
-from api.database.database import get_session
-from api.database.models import Class, Group
-from api.src.external import get_schedule
+from database.database import get_session
+from database.models import Class, Group
+from src.external import get_schedule
 
 app = FastAPI()
 
