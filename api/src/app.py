@@ -154,8 +154,8 @@ async def check_facility(day: datetime,
     return result
 
 
-@app.get("/install_gropus")
-async def install_gropus(session: AsyncSession = Depends(get_session)):
+@app.get("/install_groups")
+async def install_groups(session: AsyncSession = Depends(get_session)):
 
     file = open(f"{STATIC_PATH}/groups.txt")
 
