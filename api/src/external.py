@@ -1,11 +1,13 @@
 import httpx
+from src.malfunc import event_converter
 
 from config import COOKIE, HOST, X_CSRF_TOKEN, X_REQUESTED_WITH
 
 
 async def get_schedule(begin: str, end: str,
                        facility: str = None, 
-                       group: str = None):
+                       group: str = None,
+                       teacher: str = None):
     
     client = httpx.AsyncClient()
 
@@ -13,6 +15,7 @@ async def get_schedule(begin: str, end: str,
         "type": "agendaWeek",
         "groups[]": group,
         "facilityId": facility,
+        "ppsId": teacher,
         "start": begin,
         "end": end
     }
@@ -27,7 +30,7 @@ async def get_schedule(begin: str, end: str,
     
     if "events" in req:
     
-        return req["events"]
+        return await event_converter(req["events"])
     
     else:
         

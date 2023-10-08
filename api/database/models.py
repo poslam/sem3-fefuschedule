@@ -1,10 +1,7 @@
 from database.database import base
 from sqlalchemy import (
     Column,
-    Float,
     Integer,
-    TIMESTAMP,
-    ForeignKey,
     TEXT
 )
 
@@ -17,17 +14,18 @@ class Group(base):
     num = Column(Integer, unique=True)
     
 
-class Class(base):
-    __tablename__ = "class"
+class Facility(base):
+    __tablename__ = "facility"
     
     id = Column(Integer, primary_key=True)
     
     name = Column(TEXT)
     num = Column(Integer, unique=True)
-    
 
-# class Event(base):
-#     __tablename__ = "project"
 
-#     id = Column(Integer, primary_key=True)
-#     name = Column(TEXT)
+class Teacher(base):
+    __tablename__ = "teacher"
+
+    id = Column(TEXT, primary_key=True)
+
+    name = Column(TEXT)

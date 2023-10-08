@@ -10,7 +10,7 @@ RUN python3 -m venv $POETRY_VENV \
 
 ENV PATH="${PATH}:${POETRY_VENV}/bin"
 
-EXPOSE 8000 5432
+EXPOSE 8001
 
 WORKDIR /api
 
