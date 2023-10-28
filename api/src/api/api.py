@@ -213,10 +213,12 @@ async def view_structure(type: str,  # groups, facilities, teachers
 
 
 @api_router.get("/check")
-async def check_facility(day: datetime,
+async def check_facility(day: str,
                          facility_name: str,
                          order: int,
                          session: AsyncSession = Depends(get_session)):
+    
+    day = parser.parse(day)
 
     begin = day
     end = day + timedelta(days=1)
