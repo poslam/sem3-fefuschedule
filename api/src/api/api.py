@@ -59,9 +59,20 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
 
         # temp = await get_schedule(facility=facility_id, begin=begin, end=end)
 
-        events = [x[0] for x in (await session.execute(
-            select(Event)
-            .where(Event.facility == facility)
+        events = [x._mapping for x in (await session.execute(
+            select(Event.id.label("event_id"),
+                   Event.name.label("event_name"),
+                   Event.order,
+                   Event.begin,
+                   Event.end,
+                   Event.facility,
+                   Facility.spec,
+                   Event.capacity,
+                   Event.teacher,
+                   Event.group,
+                   Event.subgroup)
+            .where(Event.facility == Facility.name)
+            .where(Facility.name == facility)
             .where(Event.begin >= begin)
             .where(Event.end <= end)
         )).all()]
@@ -81,8 +92,26 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
 
         # events = temp["events"]
         
-        events = [x[0] for x in (await session.execute(
-            select(Event)
+        # events = [x[0] for x in (await session.execute(
+        #     select(Event)
+        #     .where(Event.group == group)
+        #     .where(Event.begin >= begin)
+        #     .where(Event.end <= end)
+        # )).all()]
+        
+        events = [x._mapping for x in (await session.execute(
+            select(Event.id.label("event_id"),
+                   Event.name.label("event_name"),
+                   Event.order,
+                   Event.begin,
+                   Event.end,
+                   Event.facility,
+                   Facility.spec,
+                   Event.capacity,
+                   Event.teacher,
+                   Event.group,
+                   Event.subgroup)
+            .where(Event.facility == Facility.name)
             .where(Event.group == group)
             .where(Event.begin >= begin)
             .where(Event.end <= end)
@@ -104,8 +133,26 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
 
         # events = temp["events"]
         
-        events = [x[0] for x in (await session.execute(
-            select(Event)
+        # events = [x[0] for x in (await session.execute(
+        #     select(Event)
+        #     .where(Event.teacher == teacher)
+        #     .where(Event.begin >= begin)
+        #     .where(Event.end <= end)
+        # )).all()]
+        
+        events = [x._mapping for x in (await session.execute(
+            select(Event.id.label("event_id"),
+                   Event.name.label("event_name"),
+                   Event.order,
+                   Event.begin,
+                   Event.end,
+                   Event.facility,
+                   Facility.spec,
+                   Event.capacity,
+                   Event.teacher,
+                   Event.group,
+                   Event.subgroup)
+            .where(Event.facility == Facility.name)
             .where(Event.teacher == teacher)
             .where(Event.begin >= begin)
             .where(Event.end <= end)
@@ -119,7 +166,7 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
         subgroup_list = subgroup.split(",")
         subgroup_list.append("")
         result = [event for event in events
-                  if event.subgroup in subgroup_list]
+                  if event["subgroup"] in subgroup_list]
 
     else:
         result = events
@@ -198,8 +245,26 @@ async def check_facility(day: datetime,
         # events_raw = await schedule(begin, end,
         #                             facility["name"], session=session)
         
-        events = [x[0] for x in (await session.execute(
-            select(Event)
+        # events = [x[0] for x in (await session.execute(
+        #     select(Event)
+        #     .where(Event.facility == facility["name"])
+        #     .where(Event.begin >= begin)
+        #     .where(Event.end <= end)
+        # )).all()]
+        
+        events = [x._mapping for x in (await session.execute(
+            select(Event.id.label("event_id"),
+                   Event.name.label("event_name"),
+                   Event.order,
+                   Event.begin,
+                   Event.end,
+                   Event.facility,
+                   Facility.spec,
+                   Event.capacity,
+                   Event.teacher,
+                   Event.group,
+                   Event.subgroup)
+            .where(Event.facility == Facility.name)
             .where(Event.facility == facility["name"])
             .where(Event.begin >= begin)
             .where(Event.end <= end)
