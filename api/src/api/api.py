@@ -116,7 +116,8 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
             status_code=400, detail="only one param should be used")
 
     if subgroup != None:
-        subgroup_list = subgroup.split(",").append("")
+        subgroup_list = subgroup.split(",")
+        subgroup_list.append("")
         result = [event for event in events
                   if event.subgroup in subgroup_list]
 
