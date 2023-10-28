@@ -37,7 +37,7 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
                    facility_name: str = None,
                    group_name: str = None,
                    teacher_name: str = None,
-                   subgroup: str = None,
+                   subgroup: str = None, #3 or 3,4,5
                    session: AsyncSession = Depends(get_session)):
     
     begin = parser.parse(begin)
@@ -116,8 +116,9 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
             status_code=400, detail="only one param should be used")
 
     if subgroup != None:
+        subgroup_list = subgroup.split(",").append("")
         result = [event for event in events
-                  if event.subgroup in ("", subgroup)]
+                  if event.subgroup in subgroup_list]
 
     else:
         result = events
@@ -193,10 +194,17 @@ async def check_facility(day: datetime,
 
         facility = facility_raw._mapping
 
-        events_raw = await schedule(begin, end,
-                                    facility["name"], session=session)
+        # events_raw = await schedule(begin, end,
+        #                             facility["name"], session=session)
+        
+        events = [x[0] for x in (await session.execute(
+            select(Event)
+            .where(Event.facility == facility["name"])
+            .where(Event.begin >= begin)
+            .where(Event.end <= end)
+        )).all()]
 
-        for event in events_raw:
+        for event in events:
 
             if event["order"] == order and \
                     parser.parse(event["begin"]).date() == day.date():
