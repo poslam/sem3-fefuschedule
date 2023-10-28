@@ -31,6 +31,7 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
                    facility_name: str = None,
                    group_name: str = None,
                    teacher_name: str = None,
+                   subgroup: str = None,
                    session: AsyncSession = Depends(get_session)):
 
     if facility_name != None and all(x == None for x in [teacher_name, group_name]):
@@ -90,8 +91,15 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
     else:
         raise HTTPException(
             status_code=400, detail="only one param should be used")
+    
+    if subgroup != None:
+        result = [event for event in events
+                  if event["subgroup"] in ("", subgroup)]
 
-    return events
+    else:
+        result = events
+
+    return result
 
 
 @api_router.get('/view_structure')
