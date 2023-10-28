@@ -206,8 +206,8 @@ async def check_facility(day: datetime,
 
         for event in events:
 
-            if event["order"] == order and \
-                    parser.parse(event["begin"]).date() == day.date():
+            if event.order == order and \
+                    parser.parse(event.begin).date() == day.date():
                 flag = True
                 break
 
