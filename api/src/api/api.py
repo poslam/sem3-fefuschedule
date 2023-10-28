@@ -1,9 +1,11 @@
+import asyncio
 from datetime import datetime, timedelta
+from src.malfunc import event_updater
 
-from database.models import Facility, Group, Teacher
+from database.models import Event, Facility, Group, Teacher
 from dateutil import parser
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, update
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from sqlalchemy import insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.install import install_router
 from src.external import get_schedule
@@ -18,8 +20,12 @@ api_router.include_router(install_router)
 
 
 @api_router.get("/serverStatus")
-async def test(session: AsyncSession = Depends(get_session)):
+async def test(back: BackgroundTasks, 
+               session: AsyncSession = Depends(get_session)):
     try:
+        
+        back.add_task(event_updater, session)
+        
         await session.execute(select(Facility))
         return {"detail": "server and database are working!"}
     except:
@@ -33,11 +39,15 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
                    teacher_name: str = None,
                    subgroup: str = None,
                    session: AsyncSession = Depends(get_session)):
+    
+    begin = parser.parse(begin)
+    end = parser.parse(end)
+    
 
     if facility_name != None and all(x == None for x in [teacher_name, group_name]):
 
         facility_raw = (await session.execute(
-            select(Facility.num)
+            select(Facility.name)
             .filter(Facility.name.ilike('%' + facility_name + '%'))
         )).first()
 
@@ -45,56 +55,69 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
             raise HTTPException(
                 status_code=400, detail="facility not found")
 
-        facility_id = facility_raw._mapping["num"]
+        facility = facility_raw._mapping["name"]
 
-        temp = await get_schedule(facility=facility_id, begin=begin, end=end)
+        # temp = await get_schedule(facility=facility_id, begin=begin, end=end)
 
-        events = temp["events"]
+        events = [x[0] for x in (await session.execute(
+            select(Event)
+            .where(Event.facility == facility)
+            .where(Event.begin >= begin)
+            .where(Event.end <= end)
+        )).all()]
 
     elif group_name != None and all(x == None for x in [teacher_name, facility_name]):
 
         group_raw = (await session.execute(
-            select(Group.num).where(Group.name == group_name)
+            select(Group.name).where(Group.name == group_name)
         )).first()
 
         if group_raw == None:
             raise HTTPException(status_code=400, detail="group not found")
 
-        group_id = group_raw._mapping["num"]
+        group = group_raw._mapping["name"]
 
-        temp = await get_schedule(group=group_id, begin=begin, end=end)
+        # temp = await get_schedule(group=group_id, begin=begin, end=end)
 
-        events = temp["events"]
-
-        await session.execute(
-            update(Group).where(Group.num == group_id).values(
-                subgroups_count=temp["subgroups"])
-        )
-        await session.commit()
+        # events = temp["events"]
+        
+        events = [x[0] for x in (await session.execute(
+            select(Event)
+            .where(Event.group == group)
+            .where(Event.begin >= begin)
+            .where(Event.end <= end)
+        )).all()]
 
     elif teacher_name != None and all(x == None for x in [group_name, facility_name]):
 
         teacher_raw = (await session.execute(
-            select(Teacher.id).filter(
+            select(Teacher.name).filter(
                 Teacher.name.ilike('%' + teacher_name + '%'))
         )).first()
 
         if teacher_raw == None:
             raise HTTPException(status_code=400, detail="teacher not found")
 
-        teacher_id = teacher_raw._mapping["id"]
+        teacher = teacher_raw._mapping["name"]
 
-        temp = await get_schedule(teacher=teacher_id, begin=begin, end=end)
+        # temp = await get_schedule(teacher=teacher_id, begin=begin, end=end)
 
-        events = temp["events"]
+        # events = temp["events"]
+        
+        events = [x[0] for x in (await session.execute(
+            select(Event)
+            .where(Event.teacher == teacher)
+            .where(Event.begin >= begin)
+            .where(Event.end <= end)
+        )).all()]
 
     else:
         raise HTTPException(
             status_code=400, detail="only one param should be used")
-    
+
     if subgroup != None:
         result = [event for event in events
-                  if event["subgroup"] in ("", subgroup)]
+                  if event.subgroup in ("", subgroup)]
 
     else:
         result = events
@@ -186,30 +209,3 @@ async def check_facility(day: datetime,
         result.append(facility["name"])
 
     return result
-
-
-@api_router.get("/event_update")
-async def event_updater(session: AsyncSession = Depends(get_session)):
-
-    day = datetime.utcnow()
-
-    day_num = day.weekday()
-
-    end = day
-
-    while (day_num < 6):
-        day_num += 1
-        end = end + timedelta(days=1)
-
-    begin = end - timedelta(days=6)
-
-    groups = (await session.execute(
-        select(Group.name, Group.num)
-    )).all()
-
-    for group_raw in groups:
-        group = group_raw._mapping
-
-        events = (await get_schedule(group=group["num"], begin=begin, end=end))["events"]
-
-

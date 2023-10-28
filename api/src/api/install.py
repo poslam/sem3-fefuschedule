@@ -11,7 +11,7 @@ install_router = APIRouter(
 )
 
 
-@install_router.get("/install_groups")
+@install_router.get("/groups")
 async def install_groups(session: AsyncSession = Depends(get_session)):
 
     file = open(f"{STATIC_PATH}/groups.txt")
@@ -32,7 +32,7 @@ async def install_groups(session: AsyncSession = Depends(get_session)):
     return {"detail": "groups install success"}
 
 
-@install_router.get("/install_teachers")
+@install_router.get("/teachers")
 async def install_gropus(session: AsyncSession = Depends(get_session)):
 
     file = open(f"{STATIC_PATH}/teachers.txt")
@@ -53,7 +53,7 @@ async def install_gropus(session: AsyncSession = Depends(get_session)):
     return {"detail": "teachers install success"}
 
 
-@install_router.get("/install_facilities")
+@install_router.get("/facilities")
 async def install_classes(session: AsyncSession = Depends(get_session)):
 
     file = open(f"{STATIC_PATH}/facilities.txt")
@@ -65,10 +65,11 @@ async def install_classes(session: AsyncSession = Depends(get_session)):
 
         facility_insert = {
             "name": facility[1],
-            "num": facility[0]
+            "num": facility[0],
+            "spec": "unknown"
         }
 
         await session.execute(insert(Facility).values(facility_insert))
         await session.commit()
 
-    return {"detail": "classes install success"}
+    return {"detail": "facilities install success"}

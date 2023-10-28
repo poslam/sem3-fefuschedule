@@ -1,14 +1,11 @@
-from fastapi import FastAPI
-
+import asyncio
+from fastapi import BackgroundTasks, Depends, FastAPI
+from src.malfunc import event_updater
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.api import api_router
+from database.database import get_session
 
 
 app = FastAPI()
 
 app.include_router(api_router)
-
-
-# @app.on_event("startup")
-# async def startup_event(back: BackgroundTasks,
-#                         session: AsyncSession = Depends(get_session)):
-#     back.add_task(event_updater, session)

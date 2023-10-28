@@ -28,11 +28,15 @@
 
 
 import asyncio
+from datetime import datetime, timedelta
 from typing import Union
 
 from dateutil import parser
 from fastapi import Depends, HTTPException
+from sqlalchemy import insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.external import get_schedule
+from database.models import Event, Facility, Group
 
 from database.database import get_session
 
@@ -60,8 +64,9 @@ async def event_converter(obj: Union[dict, list]):
             return event
 
         except:
-            raise HTTPException(status_code=400, detail="incorrect event format")
-        
+            raise HTTPException(
+                status_code=400, detail="incorrect event format")
+
     elif isinstance(obj, list):
 
         result = []
@@ -87,17 +92,131 @@ async def event_converter(obj: Union[dict, list]):
                 result.append(event)
 
             except:
-                raise HTTPException(status_code=400, detail="incorrect event format")
-            
+                raise HTTPException(
+                    status_code=400, detail="incorrect event format")
+
         return result
-        
+
     else:
-        raise HTTPException(status_code=400, detail="incorrect event format")\
-        
+        raise HTTPException(status_code=400, detail="incorrect event format")
+
 
 async def event_updater(session: AsyncSession = Depends(get_session)):
-    
-    while True:
-        pass
 
-        await asyncio.sleep(10)
+    day = datetime.utcnow()
+
+    day_num = day.weekday()
+
+    end = day
+
+    while (day_num < 6):
+        day_num += 1
+        end = end + timedelta(days=1)
+
+    begin = end - timedelta(days=6)
+
+    groups = (await session.execute(
+        select(Group.name, Group.num)
+    )).all()
+
+    while True:
+
+        for group_raw in groups:
+
+            group = group_raw._mapping
+
+            temp = (await get_schedule(group=group["num"], begin=begin, end=end))
+            
+            await session.execute(
+                update(Group).where(Group.num == group["num"]).values(
+                    subgroups_count=temp["subgroups"])
+            )
+            await session.commit()
+
+            for event in temp["events"]:
+
+                event_db = await session.get(Event, event["event_id"])
+
+                event_insert = {
+                    "id": event["event_id"],
+                    "name": event["event_name"],
+                    "order": event["order"],
+                    "begin": parser.parse(event["begin"]),
+                    "end": parser.parse(event["end"]),
+                    "facility": event["facility"],
+                    "capacity": event["capacity"],
+                    "teacher": event["teacher"],
+                    "group": event["group"],
+                    "subgroup": event["subgroup"]
+                }
+
+                if event_db != None:
+                    if event_db.changed:
+                        continue
+                    else:
+                        stmt = (update(Event)
+                                .where(Event.id == event["event_id"])
+                                .values(event_insert)
+                                )
+                else:
+                    stmt = insert(Event).values(event_insert)
+
+                facility = (await session.execute(
+                    select(Facility).where(Facility.name == event["facility"])
+                )).first()
+
+                if facility == None:
+
+                    max_num = max([x._mapping["num"] for x in (await session.execute(
+                        select(Facility.num)
+                    )).all()])
+
+                    if event["spec"] == "Лекционные занятия":
+                        spec = "lecture"
+                    else:
+                        spec = "lab_or_prac"
+
+                    try:
+                        await session.execute(
+                            insert(Facility).values({"name": event["facility"],
+                                                     "num": max_num+1,
+                                                     "spec": spec})
+                        )
+                        await session.commit()
+                    except Exception as e:
+                        await session.rollback()
+                        print(e)
+
+                    # отправка на почту?
+
+                else:
+
+                    if event["spec"] == "Лекционные занятия":
+                        spec = "lecture"
+                    else:
+                        spec = "lab_or_prac"
+
+                    try:
+                        await session.execute(
+                            update(Facility).where(Facility.name ==
+                                                   event["facility"]).values(spec=spec)
+                        )
+                        await session.commit()
+                    except Exception as e:
+                        print(e)
+                        await session.rollback()
+
+                try:
+                    await session.execute(stmt)
+                    await session.commit()
+                except Exception as e:
+                    print(e)
+                    await session.rollback()
+
+            await asyncio.sleep(1)
+
+        if end - datetime.utcnow() < timedelta(weeks=2):
+            begin = begin + timedelta(7)
+            end = end + timedelta(7)
+        else:
+            await asyncio.sleep(2*24*60*60)  # sleep for a week

@@ -1,6 +1,67 @@
+from typing import Union
+from fastapi import HTTPException
 import httpx
+from dateutil import parser
 from config import COOKIE, HOST, X_CSRF_TOKEN, X_REQUESTED_WITH
-from src.malfunc import event_converter
+# from src.malfunc import event_converter
+
+async def event_converter(obj: Union[dict, list]):
+
+    if isinstance(obj, dict):
+
+        try:
+
+            event = {
+                "event_id": obj["id"],
+                "event_name": obj["title"],
+                "order": obj["order"],
+                "begin": parser.parse(obj["start"]).strftime("%Y-%m-%dT%H:%M:%S"),
+                "end": parser.parse(obj["end"]).strftime("%Y-%m-%dT%H:%M:%S"),
+                "facility": obj["classroom"],
+                "spec": obj["pps_load"],
+                "capacity": obj["students_number"],
+                "teacher": obj["teacher"],
+                "group": obj["group"],
+                "subgroup": obj["subgroup"]
+            }
+
+            return event
+
+        except:
+            raise HTTPException(status_code=400, detail="incorrect event format")
+        
+    elif isinstance(obj, list):
+
+        result = []
+
+        for event_raw in obj:
+
+            try:
+
+                event = {
+                    "event_id": event_raw["id"],
+                    "event_name": event_raw["title"],
+                    "order": event_raw["order"],
+                    "begin": parser.parse(event_raw["start"]).strftime("%Y-%m-%dT%H:%M:%S"),
+                    "end": parser.parse(event_raw["end"]).strftime("%Y-%m-%dT%H:%M:%S"),
+                    "facility": event_raw["classroom"],
+                    "spec": event_raw["pps_load"],
+                    "capacity": event_raw["students_number"],
+                    "teacher": event_raw["teacher"],
+                    "group": event_raw["group"],
+                    "subgroup": event_raw["subgroup"]
+                }
+
+                result.append(event)
+
+            except:
+                raise HTTPException(status_code=400, detail="incorrect event format")
+            
+        return result
+        
+    else:
+        raise HTTPException(status_code=400, detail="incorrect event format")
+        
 
 
 async def get_schedule(begin: str, end: str,
