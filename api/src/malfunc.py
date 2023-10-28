@@ -27,9 +27,14 @@
 #     },
 
 
+import asyncio
 from typing import Union
-from fastapi import HTTPException
+
 from dateutil import parser
+from fastapi import Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from database.database import get_session
 
 
 async def event_converter(obj: Union[dict, list]):
@@ -87,4 +92,12 @@ async def event_converter(obj: Union[dict, list]):
         return result
         
     else:
-        raise HTTPException(status_code=400, detail="incorrect event format")
+        raise HTTPException(status_code=400, detail="incorrect event format")\
+        
+
+async def event_updater(session: AsyncSession = Depends(get_session)):
+    
+    while True:
+        pass
+
+        await asyncio.sleep(10)

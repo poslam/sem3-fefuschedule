@@ -1,7 +1,6 @@
 import httpx
-from src.malfunc import event_converter
-
 from config import COOKIE, HOST, X_CSRF_TOKEN, X_REQUESTED_WITH
+from src.malfunc import event_converter
 
 
 async def get_schedule(begin: str, end: str,
@@ -29,9 +28,8 @@ async def get_schedule(begin: str, end: str,
     req = (await client.get(f"{HOST}/schedule/get", params=params, headers=headers)).json()
     
     if "events" in req:
+        return {"events": await event_converter(req["events"]), 
+                "subgroups": len([x for x in req["subgroups"] if len(x) > 0])}
     
-        return await event_converter(req["events"])
-    
-    else:
-        
+    else: 
         return req
