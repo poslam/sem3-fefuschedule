@@ -220,7 +220,7 @@ async def check_facility(day: str,
             facilities = (await session.execute(
                 select(Facility.name, Facility.spec)
                 .filter(Facility.name.ilike('%' + facility_name + '%'))
-                
+                .where(Facility.spec == spec)
             )).all()
 
         else:
