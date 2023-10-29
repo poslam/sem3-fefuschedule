@@ -198,30 +198,43 @@ async def check_facility(day: str,
     begin = day
     end = day + timedelta(days=1)
 
-    if facility_name is not None:
+    if spec == None:
 
-        facilities = (await session.execute(
-            select(Facility.name, Facility.spec).filter(
-                Facility.name.ilike('%' + facility_name + '%'))
-        )).all()
+        if facility_name is not None:
+
+            facilities = (await session.execute(
+                select(Facility.name, Facility.spec).filter(
+                    Facility.name.like(facility_name + '%'))
+            )).all()
+
+        else:
+
+            facilities = (await session.execute(
+                select(Facility.name, Facility.spec) 
+            )).all()
 
     else:
 
-        facilities = (await session.execute(
-            select(Facility.name, Facility.spec)
-        )).all()
+        if facility_name is not None:
+
+            facilities = (await session.execute(
+                select(Facility.name)
+                .filter(Facility.name.like(facility_name + '%'))
+                
+            )).all()
+
+        else:
+
+            facilities = (await session.execute(
+                select(Facility.name) 
+                .where(Facility.spec == spec)
+            )).all()
 
     result = []
 
     for facility_raw in facilities:
 
-        # flag = False
-
         facility = facility_raw._mapping
-
-        if spec != None:
-            if facility["spec"].name != spec:
-                continue
 
         events = [x._mapping for x in (await session.execute(
             select(Event)
@@ -233,17 +246,5 @@ async def check_facility(day: str,
 
         if events == []:
             result.append({"name": facility["name"], "spec": facility["spec"]})
-
-        # for event in events:
-
-        #     if event["order"] == order and \
-        #             event["begin"].date() == day.date():
-        #         flag = True
-        #         break
-
-        # if flag:
-        #     continue
-
-        # result.append(facility["name"])
 
     return result
