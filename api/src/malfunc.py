@@ -193,10 +193,10 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
             await asyncio.sleep(2 * 24 * 60 * 60)  # sleep for 2 days
 
 
-def facility_spec_parser(dict: dict):
+def facility_spec_parser(obj: dict):
 
     try:
-        spec = dict["spec"]
+        spec = obj["spec"]
     except BaseException:
         raise HTTPException(status_code=500, detail="incorrect spec")
 
@@ -209,9 +209,10 @@ def facility_spec_parser(dict: dict):
     else:
         spec_new = "Обычная аудитория"
 
-    dict["spec"] = spec_new
+    obj = dict(obj)
+    obj["spec"] = spec_new
 
-    return dict
+    return obj
 
 
 # {
