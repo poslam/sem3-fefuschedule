@@ -167,7 +167,7 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                     else:
                         spec = "lab_or_prac"
 
-                    print(event["spec", spec])
+                    print(event["spec"], spec)
                     
                     try:
                         await session.execute(
