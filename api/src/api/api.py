@@ -190,7 +190,7 @@ async def view_structure(type: str,  # groups, facilities, teachers
 async def check_facility(day: str,
                          facility_name: str,
                          order: int,
-                         spec: str = None, # lecture, lab_or_prac
+                         spec: str = None,  # lecture, lab_or_prac
                          session: AsyncSession = Depends(get_session)):
 
     day: datetime = parser.parse(day)
@@ -215,7 +215,7 @@ async def check_facility(day: str,
 
     for facility_raw in facilities:
 
-        flag = False
+        # flag = False
 
         facility = facility_raw._mapping
 
@@ -224,33 +224,26 @@ async def check_facility(day: str,
                 continue
 
         events = [x._mapping for x in (await session.execute(
-            select(Event.id.label("event_id"),
-                   Event.name.label("event_name"),
-                   Event.order,
-                   Event.begin,
-                   Event.end,
-                   Event.facility,
-                   Facility.spec,
-                   Event.capacity,
-                   Event.teacher,
-                   Event.group,
-                   Event.subgroup)
-            .where(Event.facility == Facility.name)
+            select(Event)
             .where(Event.facility == facility["name"])
+            .where(Event.order == order)
             .where(Event.begin >= begin)
             .where(Event.end <= end)
         )).all()]
 
-        for event in events:
+        if events == []:
+            result.append(facility["name"])
 
-            if event["order"] == order and \
-                    event["begin"].date() == day.date():
-                flag = True
-                break
+        # for event in events:
 
-        if flag:
-            continue
+        #     if event["order"] == order and \
+        #             event["begin"].date() == day.date():
+        #         flag = True
+        #         break
 
-        result.append(facility["name"])
+        # if flag:
+        #     continue
+
+        # result.append(facility["name"])
 
     return result
