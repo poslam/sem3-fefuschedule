@@ -218,7 +218,7 @@ async def check_facility(day: str,
         if facility_name is not None:
 
             facilities = (await session.execute(
-                select(Facility.name)
+                select(Facility.name, Facility.spec)
                 .filter(Facility.name.like(facility_name + '%'))
                 
             )).all()
@@ -226,7 +226,7 @@ async def check_facility(day: str,
         else:
 
             facilities = (await session.execute(
-                select(Facility.name) 
+                select(Facility.name, Facility.spec) 
                 .where(Facility.spec == spec)
             )).all()
 
