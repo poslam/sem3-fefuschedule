@@ -55,8 +55,6 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
 
         facility = facility_raw._mapping["name"]
 
-        # temp = await get_schedule(facility=facility_id, begin=begin, end=end)
-
         events = [facility_spec_parser(x._mapping) for x in (await session.execute(
             select(Event.id.label("event_id"),
                    Event.name.label("event_name"),
@@ -85,17 +83,6 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
             raise HTTPException(status_code=400, detail="group not found")
 
         group = group_raw._mapping["name"]
-
-        # temp = await get_schedule(group=group_id, begin=begin, end=end)
-
-        # events = temp["events"]
-
-        # events = [x[0] for x in (await session.execute(
-        #     select(Event)
-        #     .where(Event.group == group)
-        #     .where(Event.begin >= begin)
-        #     .where(Event.end <= end)
-        # )).all()]
 
         events = [facility_spec_parser(x._mapping) for x in (await session.execute(
             select(Event.id.label("event_id"),
@@ -203,6 +190,7 @@ async def view_structure(type: str,  # groups, facilities, teachers
 async def check_facility(day: str,
                          facility_name: str,
                          order: int,
+                         spec: str = None, # lecture, lab_or_prac
                          session: AsyncSession = Depends(get_session)):
 
     day: datetime = parser.parse(day)
@@ -213,14 +201,14 @@ async def check_facility(day: str,
     if facility_name is not None:
 
         facilities = (await session.execute(
-            select(Facility.name).filter(
+            select(Facility.name, Facility.spec).filter(
                 Facility.name.ilike('%' + facility_name + '%'))
         )).all()
 
     else:
 
         facilities = (await session.execute(
-            select(Facility.name)
+            select(Facility.name, Facility.spec)
         )).all()
 
     result = []
@@ -230,6 +218,10 @@ async def check_facility(day: str,
         flag = False
 
         facility = facility_raw._mapping
+
+        if spec != None:
+            if facility["spec"].name != spec:
+                continue
 
         events = [x._mapping for x in (await session.execute(
             select(Event.id.label("event_id"),
