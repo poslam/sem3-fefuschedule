@@ -205,6 +205,9 @@ def facility_spec_parser(dict: dict):
 
     elif spec == "lecture":
         spec_new = "Лекционная аудитория"
+        
+    else:
+        spec_new = "Обычная аудитория"
 
     dict["spec"] = spec_new
 
