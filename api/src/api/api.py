@@ -69,8 +69,8 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
                    Event.teacher,
                    Event.group,
                    Event.subgroup)
-            .where(Event.facility == Facility.name)
-            .where(Facility.name == facility)
+            .where(Event.facility == facility)
+            .where(Facility.name == Event.facility)
             .where(Event.begin >= begin)
             .where(Event.end <= end)
         )).all()]
@@ -109,7 +109,7 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
                    Event.teacher,
                    Event.group,
                    Event.subgroup)
-            .where(Event.facility == Facility.name)
+            .where(Facility.name == Event.facility)
             .where(Event.group == group)
             .where(Event.begin >= begin)
             .where(Event.end <= end)
@@ -139,7 +139,7 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
                    Event.teacher,
                    Event.group,
                    Event.subgroup)
-            .where(Event.facility == Facility.name)
+            .where(Facility.name == Event.facility)
             .where(Event.teacher == teacher)
             .where(Event.begin >= begin)
             .where(Event.end <= end)

@@ -121,16 +121,16 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                     "subgroup": event["subgroup"]
                 }
 
-                # if event_db is not None:
-                #     if event_db.changed:
-                #         continue
-                #     else:
-                #         stmt = (update(Event)
-                #                 .where(Event.id == event["event_id"])
-                #                 .values(event_insert)
-                #                 )
-                # else:
-                #     stmt = insert(Event).values(event_insert)
+                if event_db is not None:
+                    if event_db.changed:
+                        continue
+                    else:
+                        stmt = (update(Event)
+                                .where(Event.id == event["event_id"])
+                                .values(event_insert)
+                                )
+                else:
+                    stmt = insert(Event).values(event_insert)
 
                 facility = (await session.execute(
                     select(Facility).where(Facility.name == event["facility"])
@@ -166,8 +166,6 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                         spec = "lecture"
                     else:
                         spec = "lab_or_prac"
-
-                    print(event["spec"], spec)
                     
                     try:
                         await session.execute(
@@ -178,17 +176,6 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                     except Exception as e:
                         print(e)
                         await session.rollback()
-                        
-                if event_db is not None:
-                    if event_db.changed:
-                        continue
-                    else:
-                        stmt = (update(Event)
-                                .where(Event.id == event["event_id"])
-                                .values(event_insert)
-                                )
-                else:
-                    stmt = insert(Event).values(event_insert)
 
                 try:
                     await session.execute(stmt)
@@ -209,7 +196,7 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
 def facility_spec_parser(obj: dict):
 
     try:
-        spec = obj["spec"]
+        spec = obj["spec"].name
     except BaseException:
         raise HTTPException(status_code=500, detail="incorrect spec")
 
