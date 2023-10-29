@@ -193,7 +193,7 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
             await asyncio.sleep(2 * 24 * 60 * 60)  # sleep for 2 days
 
 
-async def facility_spec_parser(dict: dict):
+def facility_spec_parser(dict: dict):
 
     try:
         spec = dict["spec"]
