@@ -232,7 +232,7 @@ async def check_facility(day: str,
         )).all()]
 
         if events == []:
-            result.append(facility["name"])
+            result.append({"name": facility["name"], "spec": facility["spec"]})
 
         # for event in events:
 
