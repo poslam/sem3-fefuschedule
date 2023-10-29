@@ -166,3 +166,4 @@ cython_debug/
 .db
 
 .venv
+api/poetry.lock
