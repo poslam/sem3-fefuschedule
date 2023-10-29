@@ -1,32 +1,3 @@
-# {
-#         "id": 10782062,
-#         "guid": "96fbe9b4-d9fc-4636-a89b-434a7d877f3d",
-#         "team_guid": "c2eb99e2-8e8c-4bcb-b5a5-5f16e9a03657",
-#         "title": "Базы данных",
-#         "start": "2023-10-24T10:10:00+10:00",
-#         "end": "2023-10-24T11:40:00+10:00",
-#         "academicGroupId": 5549,
-#         "academicGroupGuid": "d2599693-5d99-11ec-a216-00155d20357c",
-#         "classroom": "D546",
-#         "control_type": "",
-#         "disciplineId": 5856,
-#         "distanceEducationDescription": "",
-#         "distanceEducationURL": null,
-#         "group": "Б9122-01.03.02сп",
-#         "group_id": 5549,
-#         "order": 2,
-#         "pps_load": "Лабораторные работы",
-#         "specialization": "Системное программирование",
-#         "specialization_id": 46,
-#         "students_number": 18,
-#         "subgroup": "1",
-#         "subgroup_id": 49,
-#         "teacher": "Месенев Павел Ростиславович",
-#         "teacher_degree": "",
-#         "userId": 21465
-#     },
-
-
 import asyncio
 from datetime import datetime, timedelta
 from typing import Union
@@ -35,10 +6,10 @@ from dateutil import parser
 from fastapi import Depends, HTTPException
 from sqlalchemy import insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.external import get_schedule
-from database.models import Event, Facility, Group
 
 from database.database import get_session
+from database.models import Event, Facility, Group
+from src.external import get_schedule
 
 
 async def event_converter(obj: Union[dict, list]):
@@ -63,7 +34,7 @@ async def event_converter(obj: Union[dict, list]):
 
             return event
 
-        except:
+        except BaseException:
             raise HTTPException(
                 status_code=400, detail="incorrect event format")
 
@@ -91,7 +62,7 @@ async def event_converter(obj: Union[dict, list]):
 
                 result.append(event)
 
-            except:
+            except BaseException:
                 raise HTTPException(
                     status_code=400, detail="incorrect event format")
 
@@ -126,7 +97,7 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
             group = group_raw._mapping
 
             temp = (await get_schedule(group=group["num"], begin=begin, end=end))
-            
+
             await session.execute(
                 update(Group).where(Group.num == group["num"]).values(
                     subgroups_count=temp["subgroups"])
@@ -150,7 +121,7 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                     "subgroup": event["subgroup"]
                 }
 
-                if event_db != None:
+                if event_db is not None:
                     if event_db.changed:
                         continue
                     else:
@@ -165,7 +136,7 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                     select(Facility).where(Facility.name == event["facility"])
                 )).first()
 
-                if facility == None:
+                if facility is None:
 
                     max_num = max([x._mapping["num"] for x in (await session.execute(
                         select(Facility.num)
@@ -179,7 +150,7 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                     try:
                         await session.execute(
                             insert(Facility).values({"name": event["facility"],
-                                                     "num": max_num+1,
+                                                     "num": max_num + 1,
                                                      "spec": spec})
                         )
                         await session.commit()
@@ -219,4 +190,51 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
             begin = begin + timedelta(7)
             end = end + timedelta(7)
         else:
-            await asyncio.sleep(2*24*60*60)  # sleep for a week
+            await asyncio.sleep(2 * 24 * 60 * 60)  # sleep for 2 days
+
+
+async def facility_spec_parser(dict: dict):
+
+    try:
+        spec = dict["spec"]
+    except BaseException:
+        raise HTTPException(status_code=500, detail="incorrect spec")
+
+    if spec == "lab_or_prac":
+        spec_new = "Обычная аудитория"
+
+    elif spec == "lecture":
+        spec_new = "Лекционная аудитория"
+
+    dict["spec"] = spec_new
+
+    return dict
+
+
+# {
+#         "id": 10782062,
+#         "guid": "96fbe9b4-d9fc-4636-a89b-434a7d877f3d",
+#         "team_guid": "c2eb99e2-8e8c-4bcb-b5a5-5f16e9a03657",
+#         "title": "Базы данных",
+#         "start": "2023-10-24T10:10:00+10:00",
+#         "end": "2023-10-24T11:40:00+10:00",
+#         "academicGroupId": 5549,
+#         "academicGroupGuid": "d2599693-5d99-11ec-a216-00155d20357c",
+#         "classroom": "D546",
+#         "control_type": "",
+#         "disciplineId": 5856,
+#         "distanceEducationDescription": "",
+#         "distanceEducationURL": null,
+#         "group": "Б9122-01.03.02сп",
+#         "group_id": 5549,
+#         "order": 2,
+#         "pps_load": "Лабораторные работы",
+#         "specialization": "Системное программирование",
+#         "specialization_id": 46,
+#         "students_number": 18,
+#         "subgroup": "1",
+#         "subgroup_id": 49,
+#         "teacher": "Месенев Павел Ростиславович",
+#         "teacher_degree": "",
+#         "userId": 21465
+#     },

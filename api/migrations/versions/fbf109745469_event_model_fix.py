@@ -7,9 +7,8 @@ Create Date: 2023-10-28 20:35:42.548450
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = 'fbf109745469'
@@ -24,13 +23,13 @@ def upgrade() -> None:
     op.drop_constraint('event_teacher_fkey', 'event', type_='foreignkey')
     op.drop_constraint('event_group_fkey', 'event', type_='foreignkey')
     op.alter_column('event', 'facility',
-               existing_type=sa.INTEGER(),
-               type_=sa.TEXT(),
-               existing_nullable=True)
+                    existing_type=sa.INTEGER(),
+                    type_=sa.TEXT(),
+                    existing_nullable=True)
     op.alter_column('event', 'group',
-               existing_type=sa.INTEGER(),
-               type_=sa.TEXT(),
-               existing_nullable=True)
+                    existing_type=sa.INTEGER(),
+                    type_=sa.TEXT(),
+                    existing_nullable=True)
     op.create_unique_constraint(None, 'facility', ['name'])
     op.create_unique_constraint(None, 'group', ['name'])
     op.create_unique_constraint(None, 'teacher', ['name'])
@@ -48,15 +47,18 @@ def downgrade() -> None:
     op.drop_constraint(None, 'event', type_='foreignkey')
     op.drop_constraint(None, 'event', type_='foreignkey')
     op.drop_constraint(None, 'event', type_='foreignkey')
-    op.create_foreign_key('event_group_fkey', 'event', 'group', ['group'], ['id'])
-    op.create_foreign_key('event_teacher_fkey', 'event', 'teacher', ['teacher'], ['id'])
-    op.create_foreign_key('event_facility_fkey', 'event', 'facility', ['facility'], ['id'])
+    op.create_foreign_key('event_group_fkey', 'event',
+                          'group', ['group'], ['id'])
+    op.create_foreign_key('event_teacher_fkey', 'event',
+                          'teacher', ['teacher'], ['id'])
+    op.create_foreign_key('event_facility_fkey', 'event',
+                          'facility', ['facility'], ['id'])
     op.alter_column('event', 'group',
-               existing_type=sa.TEXT(),
-               type_=sa.INTEGER(),
-               existing_nullable=True)
+                    existing_type=sa.TEXT(),
+                    type_=sa.INTEGER(),
+                    existing_nullable=True)
     op.alter_column('event', 'facility',
-               existing_type=sa.TEXT(),
-               type_=sa.INTEGER(),
-               existing_nullable=True)
+                    existing_type=sa.TEXT(),
+                    type_=sa.INTEGER(),
+                    existing_nullable=True)
     # ### end Alembic commands ###

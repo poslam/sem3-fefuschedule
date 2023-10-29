@@ -1,9 +1,11 @@
 from typing import Union
-from fastapi import HTTPException
+
 import httpx
 from dateutil import parser
+from fastapi import HTTPException
+
 from config import COOKIE, HOST, X_CSRF_TOKEN, X_REQUESTED_WITH
-# from src.malfunc import event_converter
+
 
 async def event_converter(obj: Union[dict, list]):
 
@@ -27,9 +29,10 @@ async def event_converter(obj: Union[dict, list]):
 
             return event
 
-        except:
-            raise HTTPException(status_code=400, detail="incorrect event format")
-        
+        except BaseException:
+            raise HTTPException(
+                status_code=400, detail="incorrect event format")
+
     elif isinstance(obj, list):
 
         result = []
@@ -54,21 +57,21 @@ async def event_converter(obj: Union[dict, list]):
 
                 result.append(event)
 
-            except:
-                raise HTTPException(status_code=400, detail="incorrect event format")
-            
+            except BaseException:
+                raise HTTPException(
+                    status_code=400, detail="incorrect event format")
+
         return result
-        
+
     else:
         raise HTTPException(status_code=400, detail="incorrect event format")
-        
 
 
 async def get_schedule(begin: str, end: str,
-                       facility: str = None, 
+                       facility: str = None,
                        group: str = None,
                        teacher: str = None):
-    
+
     client = httpx.AsyncClient()
 
     params = {
@@ -83,14 +86,14 @@ async def get_schedule(begin: str, end: str,
     headers = {
         "Cookie": COOKIE,
         "X-CSRF-Token": X_CSRF_TOKEN,
-        "X-Requested-With": X_REQUESTED_WITH 
+        "X-Requested-With": X_REQUESTED_WITH
     }
 
     req = (await client.get(f"{HOST}/schedule/get", params=params, headers=headers)).json()
-    
+
     if "events" in req:
-        return {"events": await event_converter(req["events"]), 
+        return {"events": await event_converter(req["events"]),
                 "subgroups": len([x for x in req["subgroups"] if len(x) > 0])}
-    
-    else: 
+
+    else:
         return req

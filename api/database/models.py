@@ -1,6 +1,7 @@
 import enum
 
-from sqlalchemy import TEXT, TIMESTAMP, Boolean, Column, Enum, ForeignKey, Integer
+from sqlalchemy import (TEXT, TIMESTAMP, Boolean, Column, Enum, ForeignKey,
+                        Integer)
 
 from database.database import base
 
@@ -13,9 +14,9 @@ class FacilitySpec(enum.Enum):
 
 class Group(base):
     __tablename__ = "group"
-    
+
     id = Column(Integer, primary_key=True)
-    
+
     name = Column(TEXT, unique=True)
     num = Column(Integer, unique=True)
 
@@ -34,13 +35,13 @@ class User(base):
 
     group = Column(ForeignKey(Group.id))
     subgroup = Column(TEXT)
-    
+
 
 class Facility(base):
     __tablename__ = "facility"
-    
+
     id = Column(Integer, primary_key=True)
-    
+
     name = Column(TEXT, unique=True)
     num = Column(Integer, unique=True)
 
@@ -57,7 +58,7 @@ class Teacher(base):
 
 class Event(base):
     __tablename__ = "event"
-    
+
     id = Column(Integer, primary_key=True)
 
     name = Column(TEXT)
@@ -67,11 +68,11 @@ class Event(base):
     end = Column(TIMESTAMP)
 
     facility = Column(TEXT)
-    
+
     capacity = Column(Integer)
     teacher = Column(TEXT)
 
     group = Column(TEXT)
     subgroup = Column(TEXT)
-    
+
     changed = Column(Boolean, default=False)

@@ -1,10 +1,10 @@
 from logging.config import fileConfig
 
-import database.models
 from alembic import context
-from config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
 from sqlalchemy import engine_from_config, pool
 
+import database.models
+from config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
 from database.database import metadata
 
 # this is the Alembic Config object, which provides
@@ -13,11 +13,11 @@ config = context.config
 
 session = config.config_ini_section
 
-config.set_section_option(session , "DB_NAME" , DB_NAME)
-config.set_section_option(session , "DB_HOST" , DB_HOST)
-config.set_section_option(session , "DB_PASS" , DB_PASS)
-config.set_section_option(session , "DB_PORT" , DB_PORT)
-config.set_section_option(session , "DB_USER" , DB_USER)
+config.set_section_option(session, "DB_NAME", DB_NAME)
+config.set_section_option(session, "DB_HOST", DB_HOST)
+config.set_section_option(session, "DB_PASS", DB_PASS)
+config.set_section_option(session, "DB_PORT", DB_PORT)
+config.set_section_option(session, "DB_USER", DB_USER)
 
 
 # Interpret the config file for Python logging.
@@ -55,7 +55,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        compare_type=True, 
+        compare_type=True,
         compare_server_default=True,
     )
 
@@ -78,7 +78,7 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata , compare_type=True,
+            connection=connection, target_metadata=target_metadata, compare_type=True,
             compare_server_default=True,
         )
 
