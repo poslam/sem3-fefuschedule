@@ -1,0 +1,1 @@
+ C:\\Users\\KJ6Z5\\Projects\\DVFU\\fefu-schedule\\app\\.dart_tool\\flutter_build\\1fb4a15487d8685322f4fcfa1bae550c\\native_assets.yaml: 
