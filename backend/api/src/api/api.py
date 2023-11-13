@@ -45,7 +45,7 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
             x is None for x in [teacher_name, group_name]):
 
         facility_raw = (await session.execute(
-            select(Facility.name)
+            select(Facility.name, Facility.capacity)
             .filter(Facility.name.ilike('%' + facility_name + '%'))
         )).first()
 
@@ -55,7 +55,7 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
 
         facility = facility_raw._mapping["name"]
 
-        events = [facility_spec_parser(x._mapping) for x in (await session.execute(
+        events_raw = (await session.execute(
             select(Event.id.label("event_id"),
                    Event.name.label("event_name"),
                    Event.order,
@@ -71,7 +71,20 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
             .where(Facility.name == Event.facility)
             .where(Event.begin >= begin)
             .where(Event.end <= end)
-        )).all()]
+        )).all()
+        
+        events = []
+        
+        for event_raw in events_raw:
+            
+            event = event_raw._mapping
+            
+            event["capacity"] = facility_raw._mapping["capacity"]
+            
+            event = facility_spec_parser(event)
+            
+            events.append(event)
+            
 
     elif group_name is not None and all(x is None for x in [teacher_name, facility_name]):
 
@@ -84,7 +97,7 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
 
         group = group_raw._mapping["name"]
 
-        events = [facility_spec_parser(x._mapping) for x in (await session.execute(
+        events_raw = (await session.execute(
             select(Event.id.label("event_id"),
                    Event.name.label("event_name"),
                    Event.order,
@@ -96,11 +109,28 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
                    Event.teacher,
                    Event.group,
                    Event.subgroup)
-            .where(Facility.name == Event.facility)
             .where(Event.group == group)
+            .where(Facility.name == Event.facility)
             .where(Event.begin >= begin)
             .where(Event.end <= end)
-        )).all()]
+        )).all()
+        
+        events = []
+        
+        for event_raw in events_raw:
+            
+            event = event_raw._mapping
+            
+            facility_raw = (await session.execute(
+                select(Facility.capacity).where(Facility.name == event["facility"])
+            )).first()
+            
+            if facility_raw != None:
+                event["capacity"] = facility_raw._mapping["capacity"]
+            
+            event = facility_spec_parser(event)
+            
+            events.append(event)
 
     elif teacher_name is not None and all(x is None for x in [group_name, facility_name]):
 
@@ -113,8 +143,8 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
             raise HTTPException(status_code=400, detail="teacher not found")
 
         teacher = teacher_raw._mapping["name"]
-
-        events = [facility_spec_parser(x._mapping) for x in (await session.execute(
+        
+        events_raw = (await session.execute(
             select(Event.id.label("event_id"),
                    Event.name.label("event_name"),
                    Event.order,
@@ -126,11 +156,28 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
                    Event.teacher,
                    Event.group,
                    Event.subgroup)
-            .where(Facility.name == Event.facility)
             .where(Event.teacher == teacher)
+            .where(Facility.name == Event.facility)
             .where(Event.begin >= begin)
             .where(Event.end <= end)
-        )).all()]
+        )).all()
+        
+        events = []
+        
+        for event_raw in events_raw:
+            
+            event = event_raw._mapping
+            
+            facility_raw = (await session.execute(
+                select(Facility.capacity).where(Facility.name == event["facility"])
+            )).first()
+            
+            if facility_raw != None:
+                event["capacity"] = facility_raw._mapping["capacity"]
+            
+            event = facility_spec_parser(event)
+            
+            events.append(event)
 
     else:
         raise HTTPException(
@@ -245,6 +292,8 @@ async def check_facility(day: str,
         )).all()]
 
         if events == []:
-            result.append({"name": facility["name"], "spec": facility["spec"]})
+            result.append({"name": facility["name"],
+                           "spec": facility["spec"], 
+                           "capacity": facility["capacity"]})
 
     return result
