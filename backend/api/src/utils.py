@@ -195,6 +195,7 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                         print(e)
                         await session.rollback()
 
+
                 await asyncio.sleep(0.5)
 
 
