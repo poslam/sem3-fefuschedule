@@ -1,0 +1,7 @@
+flutter_native_splash:
+  color: "#0967B0"
+  image: assets/image/logo_light.png
+  # branding: assets/img/admin_mode_panel.png
+  # color_dark: "#252525"
+  # image_dark:  assets/img/logo_dark.png
+  # branding_dark: assets/img/admin_mode_panel.png

@@ -1,0 +1,4 @@
+input_directory: i18n
+input_file_pattern: .i18n.yaml
+namespaces: true
+output_directory: lib/i18n
