@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database.database import get_session
 from database.models import Event, Facility, Group, Teacher
 from src.api.install import install_router
-from src.malfunc import event_updater, facility_spec_parser
+from api.src.utils import event_updater, facility_spec_parser
 
 api_router = APIRouter(
     prefix="/api"
@@ -203,14 +203,14 @@ async def check_facility(day: str,
         if facility_name is not None:
 
             facilities = (await session.execute(
-                select(Facility.name, Facility.spec).filter(
+                select(Facility.name, Facility.spec, Facility.capacity).filter(
                     Facility.name.ilike('%' + facility_name + '%'))
             )).all()
 
         else:
 
             facilities = (await session.execute(
-                select(Facility.name, Facility.spec) 
+                select(Facility.name, Facility.spec, Facility.capacity) 
             )).all()
 
     else:
@@ -218,7 +218,7 @@ async def check_facility(day: str,
         if facility_name is not None:
 
             facilities = (await session.execute(
-                select(Facility.name, Facility.spec)
+                select(Facility.name, Facility.spec, Facility.capacity)
                 .filter(Facility.name.ilike('%' + facility_name + '%'))
                 .where(Facility.spec == spec)
             )).all()
@@ -226,7 +226,7 @@ async def check_facility(day: str,
         else:
 
             facilities = (await session.execute(
-                select(Facility.name, Facility.spec) 
+                select(Facility.name, Facility.spec, Facility.capacity) 
                 .where(Facility.spec == spec)
             )).all()
 

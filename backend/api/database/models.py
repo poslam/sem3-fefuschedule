@@ -46,6 +46,7 @@ class Facility(base):
     num = Column(Integer, unique=True)
 
     spec = Column(Enum(FacilitySpec))
+    capacity = Column(Integer, default=0)
 
 
 class Teacher(base):

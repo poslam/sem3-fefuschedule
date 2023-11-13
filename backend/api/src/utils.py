@@ -2,14 +2,14 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import Union
 
+from database.models import Event, Facility, Group
 from dateutil import parser
 from fastapi import Depends, HTTPException
 from sqlalchemy import insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.external import get_schedule
 
 from database.database import get_session
-from database.models import Event, Facility, Group
-from src.external import get_schedule
 
 
 async def event_converter(obj: Union[dict, list]):
@@ -39,7 +39,6 @@ async def event_converter(obj: Union[dict, list]):
                 status_code=400, detail="incorrect event format")
 
     elif isinstance(obj, list):
-
         result = []
 
         for event_raw in obj:
@@ -142,7 +141,7 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                         select(Facility.num)
                     )).all()])
 
-                    if event["spec"] == "Лекционные занятия":
+                    if event["capacity"] >= 40:
                         spec = "lecture"
                     else:
                         spec = "lab_or_prac"
@@ -151,26 +150,29 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                         await session.execute(
                             insert(Facility).values({"name": event["facility"],
                                                      "num": max_num + 1,
-                                                     "spec": spec})
+                                                     "spec": spec,
+                                                     "capacity": event["capacity"]})
                         )
                         await session.commit()
                     except Exception as e:
                         await session.rollback()
                         print(e)
 
-                    # отправка на почту?
-
                 else:
 
-                    if event["spec"] == "Лекционные занятия":
+                    if event["capacity"] >= 40:
                         spec = "lecture"
                     else:
                         spec = "lab_or_prac"
-                    
+
+                    capacity = max(facility[0].capacity, event["capacity"])
+
                     try:
                         await session.execute(
                             update(Facility).where(Facility.name ==
-                                                   event["facility"]).values(spec=spec)
+                                                   event["facility"])
+                            .values({"spec": spec,
+                                     "capacity": capacity})
                         )
                         await session.commit()
                     except Exception as e:
@@ -205,7 +207,7 @@ def facility_spec_parser(obj: dict):
 
     elif spec == "lecture":
         spec_new = "Лекционная аудитория"
-        
+
     else:
         spec_new = "Обычная аудитория"
 
