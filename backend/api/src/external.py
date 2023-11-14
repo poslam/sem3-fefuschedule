@@ -1,10 +1,9 @@
 from typing import Union
 
 import httpx
+from config import COOKIE, HOST, X_CSRF_TOKEN, X_REQUESTED_WITH
 from dateutil import parser
 from fastapi import HTTPException
-
-from config import COOKIE, HOST, X_CSRF_TOKEN, X_REQUESTED_WITH
 
 
 async def event_converter(obj: Union[dict, list]):
@@ -89,7 +88,8 @@ async def get_schedule(begin: str, end: str,
         "X-Requested-With": X_REQUESTED_WITH
     }
 
-    req = (await client.get(f"{HOST}/schedule/get", params=params, headers=headers)).json()
+    req = (await client.get(f"{HOST}/schedule/get", params=params, headers=headers,
+                            timeout=600)).json()
 
     if "events" in req:
         return {"events": await event_converter(req["events"]),

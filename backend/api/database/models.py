@@ -31,7 +31,6 @@ class User(base):
     name = Column(TEXT)
 
     email = Column(TEXT)
-    password = Column(TEXT)
 
     group = Column(ForeignKey(Group.id))
     subgroup = Column(TEXT)

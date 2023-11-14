@@ -2,14 +2,13 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import Union
 
+from database.database import get_session
 from database.models import Event, Facility, Group
 from dateutil import parser
 from fastapi import Depends, HTTPException
 from sqlalchemy import insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.external import get_schedule
-
-from database.database import get_session
 
 
 async def event_converter(obj: Union[dict, list]):
@@ -78,7 +77,7 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
     )).all()
 
     while True:
-        
+
         day = datetime.utcnow()
 
         day_num = day.weekday()
@@ -90,12 +89,13 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
             end = end + timedelta(days=1)
 
         begin = end - timedelta(days=6)
-        
+
         time_periods = []
-        
+
         for i in range(0, 5):
-            time_periods.append([begin+timedelta(weeks=i), end+timedelta(weeks=i)])
-            
+            time_periods.append(
+                [begin+timedelta(weeks=i), end+timedelta(weeks=i)])
+
         for period in time_periods:
 
             for group_raw in groups:
@@ -139,7 +139,8 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                         stmt = insert(Event).values(event_insert)
 
                     facility = (await session.execute(
-                        select(Facility).where(Facility.name == event["facility"])
+                        select(Facility).where(
+                            Facility.name == event["facility"])
                     )).first()
 
                     if facility is None:
@@ -157,8 +158,8 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                             await session.execute(
                                 insert(Facility).values({"name": event["facility"],
                                                         "num": max_num + 1,
-                                                        "spec": spec,
-                                                        "capacity": event["capacity"]})
+                                                         "spec": spec,
+                                                         "capacity": event["capacity"]})
                             )
                             await session.commit()
                         except Exception as e:
@@ -166,20 +167,20 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                             print(e)
 
                     else:
-                        
-                        
-                        
-                        if event["capacity"] >= 40:
-                            spec = "lecture"
-                        else:
-                            spec = "lab_or_prac"
 
                         capacity = max(facility[0].capacity, event["capacity"])
+
+                        if facility[0].spec != 'lecture':
+
+                            if capacity >= 40:
+                                spec = "lecture"
+                            else:
+                                spec = "lab_or_prac"
 
                         try:
                             await session.execute(
                                 update(Facility).where(Facility.name ==
-                                                    event["facility"])
+                                                       event["facility"])
                                 .values({"spec": spec,
                                         "capacity": capacity})
                             )
@@ -194,7 +195,6 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                     except Exception as e:
                         print(e)
                         await session.rollback()
-
 
                 await asyncio.sleep(0.5)
 

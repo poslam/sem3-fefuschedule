@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy import insert
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from config import STATIC_PATH
 from database.database import get_session
 from database.models import Facility, Group, Teacher
+from fastapi import APIRouter, Depends
+from sqlalchemy import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 
 install_router = APIRouter(
     prefix="/install"
