@@ -77,7 +77,7 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
         
         for event_raw in events_raw:
             
-            event = event_raw._mapping
+            event = dict(event_raw._mapping)
             
             event["capacity"] = facility_raw._mapping["capacity"]
             
@@ -119,7 +119,7 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
         
         for event_raw in events_raw:
             
-            event = event_raw._mapping
+            event = dict(event_raw._mapping)
             
             facility_raw = (await session.execute(
                 select(Facility.capacity).where(Facility.name == event["facility"])
@@ -166,7 +166,7 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
         
         for event_raw in events_raw:
             
-            event = event_raw._mapping
+            event = dict(event_raw._mapping)
             
             facility_raw = (await session.execute(
                 select(Facility.capacity).where(Facility.name == event["facility"])
