@@ -17,3 +17,7 @@ STATIC_PATH = os.environ.get("STATIC_PATH")
 COOKIE = os.environ.get("COOKIE")
 X_CSRF_TOKEN = os.environ.get("X-CSRF-Token")
 X_REQUESTED_WITH = os.environ.get("X-Requested-With")
+
+SECRET_AUTH = os.environ.get("SECRET_AUTH")
+AUTH_TOKEN_LIFE = os.environ.get("AUTH_TOKEN_LIFE")
+ALGORITHM = os.environ.get("ALGORITHM")
