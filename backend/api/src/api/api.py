@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database.database import get_session
 from database.models import Event, Facility, Group, Teacher
 from src.api.install import install_router
-from api.src.utils import event_updater, facility_spec_parser
+from src.utils import event_updater, facility_spec_parser
 
 api_router = APIRouter(
     prefix="/api"
@@ -212,7 +212,7 @@ async def view_structure(type: str,  # groups, facilities, teachers
     elif type == "facilities":
 
         facilities_raw = (await session.execute(
-            select(Facility.name, Facility.num, Facility.spec)
+            select(Facility.name, Facility.num, Facility.spec, Facility.capacity)
         )).all()
 
         facilities = [facility_spec_parser(x._mapping) for x in facilities_raw]

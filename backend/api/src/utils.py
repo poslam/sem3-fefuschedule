@@ -167,14 +167,14 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
 
                     else:
                         
-                        
-                        
-                        if event["capacity"] >= 40:
-                            spec = "lecture"
-                        else:
-                            spec = "lab_or_prac"
-
                         capacity = max(facility[0].capacity, event["capacity"])
+                        
+                        if facility[0].spec != 'lecture':
+                            
+                            if capacity >= 40:
+                                spec = "lecture"
+                            else:
+                                spec = "lab_or_prac"
 
                         try:
                             await session.execute(
@@ -194,7 +194,6 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                     except Exception as e:
                         print(e)
                         await session.rollback()
-
 
                 await asyncio.sleep(0.5)
 
