@@ -93,8 +93,13 @@ async def get_schedule(begin: str, end: str,
     d = dict()
 
     if "events" in req:
+        subgroups = req["subgroups"]
+        
+        if isinstance(subgroups, dict):
+            subgroups = subgroups.values()
+        
         return {"events": await event_converter(req["events"]),
-                "subgroups": [x for x in req["subgroups"].values() if x not in ["", " ", None]]}
+                "subgroups": [x for x in subgroups if x not in ["", " ", None]]}
 
     else:
         return req
