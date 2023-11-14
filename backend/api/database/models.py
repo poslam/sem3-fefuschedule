@@ -1,16 +1,23 @@
 import enum
 
+from database.database import base
 from sqlalchemy import (TEXT, TIMESTAMP, Boolean, Column, Enum, ForeignKey,
                         Integer)
 
-from database.database import base
 
+class UserTypes(enum.Enum):
+    student = "student"
+    teacher = "teacher"
+    elder = "elder"
+    moderator = "moderator"
+    superadmin = "superadmin"
+    
 
 class FacilitySpec(enum.Enum):
     lecture = "lecture"
     lab_or_prac = "lab_or_prac"
     unknown = "unknown"
-
+    
 
 class Group(base):
     __tablename__ = "group"
@@ -21,6 +28,25 @@ class Group(base):
     num = Column(Integer, unique=True)
 
     subgroups_count = Column(Integer)
+    
+    
+class SpecialEvent(base):
+    __tablename__ = "special_group"
+    
+    id = Column(Integer, primary_key=True)
+    
+    name = Column(TEXT)
+    group = Column(TEXT)
+    rule = Column(TEXT)
+    
+
+class Subgroup(base):
+    __tablename__ = "subgroup"
+    
+    id = Column(Integer, primary_key=True)
+    
+    name = Column(TEXT)
+    group = Column(ForeignKey(Group.id))
 
 
 class User(base):
@@ -29,8 +55,13 @@ class User(base):
     id = Column(Integer, primary_key=True)
 
     name = Column(TEXT)
+    
+    type = Column(Enum(UserTypes), default='regular_user')
 
     email = Column(TEXT)
+    
+    color = Column(TEXT)
+    theme = Column(TEXT)
 
     group = Column(ForeignKey(Group.id))
     subgroup = Column(TEXT)

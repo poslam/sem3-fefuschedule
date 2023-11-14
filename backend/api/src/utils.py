@@ -11,6 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.external import get_schedule
 
 
+def time():
+    return datetime.utcnow()+timedelta(hours=10)
+
+
 async def event_converter(obj: Union[dict, list]):
 
     if isinstance(obj, dict):
@@ -104,13 +108,20 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
 
                 temp = (await get_schedule(group=group["num"], begin=period[0], end=period[1]))
 
-                await session.execute(
-                    update(Group).where(Group.num == group["num"]).values(
-                        subgroups_count=temp["subgroups"])
-                )
-                await session.commit()
+                # await session.execute(
+                #     update(Group).where(Group.num == group["num"]).values(
+                #         subgroups_count=temp["subgroups"])
+                # )
+                # await session.commit()
 
                 for event in temp["events"]:
+                    
+                    facility = (await session.execute(
+                        select(Facility).where(
+                            Facility.name == event["facility"])
+                    )).first()
+                    
+                    capacity = max(facility[0].capacity, event["capacity"])
 
                     event_db = await session.get(Event, event["event_id"])
 
@@ -121,7 +132,7 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                         "begin": parser.parse(event["begin"]),
                         "end": parser.parse(event["end"]),
                         "facility": event["facility"],
-                        "capacity": event["capacity"],
+                        "capacity": capacity,
                         "teacher": event["teacher"],
                         "group": event["group"],
                         "subgroup": event["subgroup"]
@@ -138,58 +149,20 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                     else:
                         stmt = insert(Event).values(event_insert)
 
-                    facility = (await session.execute(
-                        select(Facility).where(
-                            Facility.name == event["facility"])
-                    )).first()
+                    if facility[0].spec != 'lecture':
 
-                    if facility is None:
-
-                        max_num = max([x._mapping["num"] for x in (await session.execute(
-                            select(Facility.num)
-                        )).all()])
-
-                        if event["capacity"] >= 40:
+                        if capacity >= 50:
                             spec = "lecture"
                         else:
                             spec = "lab_or_prac"
 
-                        try:
-                            await session.execute(
-                                insert(Facility).values({"name": event["facility"],
-                                                        "num": max_num + 1,
-                                                         "spec": spec,
-                                                         "capacity": event["capacity"]})
-                            )
-                            await session.commit()
-                        except Exception as e:
-                            await session.rollback()
-                            print(e)
-
-                    else:
-
-                        capacity = max(facility[0].capacity, event["capacity"])
-
-                        if facility[0].spec != 'lecture':
-
-                            if capacity >= 40:
-                                spec = "lecture"
-                            else:
-                                spec = "lab_or_prac"
-
-                        try:
-                            await session.execute(
-                                update(Facility).where(Facility.name ==
-                                                       event["facility"])
-                                .values({"spec": spec,
-                                        "capacity": capacity})
-                            )
-                            await session.commit()
-                        except Exception as e:
-                            print(e)
-                            await session.rollback()
-
                     try:
+                        await session.execute(
+                            update(Facility).where(Facility.name ==
+                                                    event["facility"])
+                            .values({"spec": spec,
+                                    "capacity": capacity})
+                        )
                         await session.execute(stmt)
                         await session.commit()
                     except Exception as e:
@@ -221,6 +194,17 @@ def facility_spec_parser(obj: dict):
     return obj
 
 
+async def special_event_checker(obj: dict,
+                                session: AsyncSession = Depends(get_session)):
+    pass
+    
+    
+
+async def event_filter(event: dict,
+                       session: AsyncSession = Depends(get_session)):
+    pass
+
+
 # {
 #         "id": 10782062,
 #         "guid": "96fbe9b4-d9fc-4636-a89b-434a7d877f3d",
@@ -247,4 +231,4 @@ def facility_spec_parser(obj: dict):
 #         "teacher": "Месенев Павел Ростиславович",
 #         "teacher_degree": "",
 #         "userId": 21465
-#     },
+# }
