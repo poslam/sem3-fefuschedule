@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta
 
+from database.database import get_session
+from database.models import Event, Facility, Group, Teacher
 from dateutil import parser
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from database.database import get_session
-from database.models import Event, Facility, Group, Teacher
+from src.api.auth import auth_router
 from src.api.install import install_router
 from src.utils import event_updater, facility_spec_parser
 
@@ -15,6 +15,7 @@ api_router = APIRouter(
 )
 
 api_router.include_router(install_router)
+api_router.include_router(auth_router)
 
 
 @api_router.get("/serverStatus")
@@ -72,19 +73,18 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
             .where(Event.begin >= begin)
             .where(Event.end <= end)
         )).all()
-        
+
         events = []
-        
+
         for event_raw in events_raw:
-            
+
             event = dict(event_raw._mapping)
-            
+
             event["capacity"] = facility_raw._mapping["capacity"]
-            
+
             event = facility_spec_parser(event)
-            
+
             events.append(event)
-            
 
     elif group_name is not None and all(x is None for x in [teacher_name, facility_name]):
 
@@ -114,22 +114,23 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
             .where(Event.begin >= begin)
             .where(Event.end <= end)
         )).all()
-        
+
         events = []
-        
+
         for event_raw in events_raw:
-            
+
             event = dict(event_raw._mapping)
-            
+
             facility_raw = (await session.execute(
-                select(Facility.capacity).where(Facility.name == event["facility"])
+                select(Facility.capacity).where(
+                    Facility.name == event["facility"])
             )).first()
-            
+
             if facility_raw != None:
                 event["capacity"] = facility_raw._mapping["capacity"]
-            
+
             event = facility_spec_parser(event)
-            
+
             events.append(event)
 
     elif teacher_name is not None and all(x is None for x in [group_name, facility_name]):
@@ -143,7 +144,7 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
             raise HTTPException(status_code=400, detail="teacher not found")
 
         teacher = teacher_raw._mapping["name"]
-        
+
         events_raw = (await session.execute(
             select(Event.id.label("event_id"),
                    Event.name.label("event_name"),
@@ -161,22 +162,23 @@ async def schedule(begin: str, end: str,  # 2023-10-07T00:00:00
             .where(Event.begin >= begin)
             .where(Event.end <= end)
         )).all()
-        
+
         events = []
-        
+
         for event_raw in events_raw:
-            
+
             event = dict(event_raw._mapping)
-            
+
             facility_raw = (await session.execute(
-                select(Facility.capacity).where(Facility.name == event["facility"])
+                select(Facility.capacity).where(
+                    Facility.name == event["facility"])
             )).first()
-            
+
             if facility_raw != None:
                 event["capacity"] = facility_raw._mapping["capacity"]
-            
+
             event = facility_spec_parser(event)
-            
+
             events.append(event)
 
     else:
@@ -212,7 +214,8 @@ async def view_structure(type: str,  # groups, facilities, teachers
     elif type == "facilities":
 
         facilities_raw = (await session.execute(
-            select(Facility.name, Facility.num, Facility.spec, Facility.capacity)
+            select(Facility.name, Facility.num,
+                   Facility.spec, Facility.capacity)
         )).all()
 
         facilities = [facility_spec_parser(x._mapping) for x in facilities_raw]
@@ -257,7 +260,7 @@ async def check_facility(day: str,
         else:
 
             facilities = (await session.execute(
-                select(Facility.name, Facility.spec, Facility.capacity) 
+                select(Facility.name, Facility.spec, Facility.capacity)
             )).all()
 
     else:
@@ -273,7 +276,7 @@ async def check_facility(day: str,
         else:
 
             facilities = (await session.execute(
-                select(Facility.name, Facility.spec, Facility.capacity) 
+                select(Facility.name, Facility.spec, Facility.capacity)
                 .where(Facility.spec == spec)
             )).all()
 
@@ -293,7 +296,17 @@ async def check_facility(day: str,
 
         if events == []:
             result.append({"name": facility["name"],
-                           "spec": facility["spec"], 
+                           "spec": facility["spec"],
                            "capacity": facility["capacity"]})
 
     return result
+
+
+@api_router.get('/add')
+async def event_add():
+    pass
+
+
+@api_router.get('/add')
+async def event_add():
+    pass
