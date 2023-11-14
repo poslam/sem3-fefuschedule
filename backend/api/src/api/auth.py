@@ -18,6 +18,10 @@ auth_router = APIRouter(
 async def type_required(types: list, auth: str = Header(None),
                         session: AsyncSession = Depends(get_session)):
     data = None
+
+    if types == []:
+        return None
+
     try:
         data = decode(auth, SECRET_AUTH, algorithms=[ALGORITHM])
 
@@ -27,7 +31,8 @@ async def type_required(types: list, auth: str = Header(None),
         if token_expired_time < time():
             raise Exception
 
-    except:
+    except Exception as e:
+        print(e)
         raise HTTPException(status_code=401, detail="token is invalid")
 
     user = await session.get(User, data["id"])
@@ -42,9 +47,14 @@ async def type_required(types: list, auth: str = Header(None),
     return user
 
 
+async def shared(auth: str = Header(None),
+                 session: AsyncSession = Depends(get_session)):
+    return await type_required([], auth, session)
+
+
 async def login_required(auth: str = Header(None),
                          session: AsyncSession = Depends(get_session)):
-    return await type_required([], auth, session)
+    return await type_required(["student", "teacher", "moderator", "elder"], auth, session)
 
 
 async def student_required(auth: str = Header(None),
@@ -84,7 +94,7 @@ async def login_func(ya_token: str,
     name = user_info["display_name"]
     email = user_info["default_email"]
 
-    if any(x not in email for x in ['@students.dvfu.ru', '@dvfu.ru']):
+    if all(x not in email for x in ['@students.dvfu.ru', '@dvfu.ru']):
         raise HTTPException(status_code=400, detail='not fefu account')
 
     user_raw = (await session.execute(
@@ -93,15 +103,20 @@ async def login_func(ya_token: str,
 
     user_insert = {
         "name": name,
-        "email": email
+        "email": email,
+        "type": "student"
     }
 
     if user_raw == None:
-
-        await session.execute(
-            insert(User).values(user_insert)
-        )
-        await session.commit()
+        try:
+            await session.execute(
+                insert(User).values(user_insert)
+            )
+            await session.commit()
+        except Exception as e:
+            print(e)
+            await session.rollback()
+            raise HTTPException(status_code=500, detail="server error")
 
         user_raw = (await session.execute(
             select(User).where(User.email == email)
@@ -109,9 +124,10 @@ async def login_func(ya_token: str,
 
     user = user_raw[0]
 
-    return {"token": make_token(user["id"]),
-            "type": user["type"].name,
-            "group": user["group"],
-            "subgroup": user["subgroup"],
-            "theme": user["theme"],
-            "color": user["color"]}
+    return {"token": make_token(user.id),
+            "name": user.name,
+            "type": user.type.name,
+            "group": user.group,
+            "subgroup": user.subgroup,
+            "theme": user.theme,
+            "color": user.color}

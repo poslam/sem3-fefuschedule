@@ -26,18 +26,15 @@ class Group(base):
 
     name = Column(TEXT, unique=True)
     num = Column(Integer, unique=True)
-
-    subgroups_count = Column(Integer)
     
     
 class SpecialEvent(base):
-    __tablename__ = "special_group"
+    __tablename__ = "special_event"
     
     id = Column(Integer, primary_key=True)
     
     name = Column(TEXT)
     group = Column(TEXT)
-    rule = Column(TEXT)
     
 
 class Subgroup(base):
@@ -46,7 +43,7 @@ class Subgroup(base):
     id = Column(Integer, primary_key=True)
     
     name = Column(TEXT)
-    group = Column(ForeignKey(Group.id))
+    group = Column(TEXT)
 
 
 class User(base):
@@ -55,15 +52,13 @@ class User(base):
     id = Column(Integer, primary_key=True)
 
     name = Column(TEXT)
-    
-    type = Column(Enum(UserTypes), default='regular_user')
-
+    type = Column(Enum(UserTypes), default='student')
     email = Column(TEXT)
     
     color = Column(TEXT)
     theme = Column(TEXT)
 
-    group = Column(ForeignKey(Group.id))
+    group = Column(TEXT)
     subgroup = Column(TEXT)
 
 

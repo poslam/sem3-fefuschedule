@@ -1,16 +1,16 @@
 from datetime import datetime, timedelta
 
 from database.database import get_session
-from database.models import Event, Facility, Group, Teacher
+from database.models import Event, Facility, Group, Subgroup, Teacher
 from dateutil import parser
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.api.auth import auth_router
+from src.api.auth import auth_router, login_required, shared
 from src.api.event import event_router
 from src.api.install import install_router
 from src.api.user import user_router
-from src.utils import event_updater, facility_spec_parser
+from src.utils import event_filter, event_updater, facility_spec_parser
 
 api_router = APIRouter(
     prefix="/api"
@@ -35,19 +35,31 @@ async def test(back: BackgroundTasks,
         return {"detail": "connection to the database is corrupted"}
 
 
-@api_router.get('/view_structure')
+@api_router.get('/view')
 async def view_structure(type: str,  # groups, facilities, teachers
+                         user=Depends(login_required),
                          session: AsyncSession = Depends(get_session)):
 
     if type == "groups":
 
         groups_raw = (await session.execute(
-            select(Group.name, Group.num, Group.subgroups_count)
+            select(Group.name, Group.num)
         )).all()
 
-        groups = [x._mapping for x in groups_raw]
+        result = []
 
-        return groups
+        for group_raw in groups_raw:
+
+            group = group_raw._mapping
+
+            subgroups = [x._mapping["name"] for x in (await session.execute(
+                select(Subgroup.name).where(Subgroup.group == group["name"])
+            )).all()]
+
+            result.append({"group": group["name"],
+                           "subgroups": subgroups})
+
+        return result
 
     elif type == "facilities":
 
@@ -79,6 +91,7 @@ async def check_facility(day: str,
                          facility_name: str,
                          order: int,
                          spec: str = None,  # lecture, lab_or_prac
+                         user=Depends(shared),
                          session: AsyncSession = Depends(get_session)):
     try:
         day: datetime = parser.parse(day)

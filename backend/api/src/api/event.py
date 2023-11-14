@@ -4,7 +4,8 @@ from dateutil import parser
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.utils import facility_spec_parser
+from src.api.auth import elder_required, shared
+from src.utils import event_filter
 
 event_router = APIRouter(
     prefix="/event"
@@ -17,6 +18,7 @@ async def schedule(begin: str, end: str,
                    group_name: str = None,
                    teacher_name: str = None,
                    subgroup: str = None,  # 3 or 3,4,5
+                   user=Depends(shared),
                    session: AsyncSession = Depends(get_session)):
 
     begin = parser.parse(begin)
@@ -61,7 +63,7 @@ async def schedule(begin: str, end: str,
 
             event["capacity"] = facility_raw._mapping["capacity"]
 
-            event = facility_spec_parser(event)
+            event = await event_filter(event, session)
 
             events.append(event)
 
@@ -92,7 +94,7 @@ async def schedule(begin: str, end: str,
             if facility_raw != None:
                 event["capacity"] = facility_raw._mapping["capacity"]
 
-            event = facility_spec_parser(event)
+            event = await event_filter(event, session)
 
             events.append(event)
 
@@ -124,7 +126,7 @@ async def schedule(begin: str, end: str,
             if facility_raw != None:
                 event["capacity"] = facility_raw._mapping["capacity"]
 
-            event = facility_spec_parser(event)
+            event = await event_filter(event, session)
 
             events.append(event)
 
@@ -146,15 +148,16 @@ async def schedule(begin: str, end: str,
 
 @event_router.post('/add')
 async def event_add(request: Request,
+                    user=Depends(elder_required),
                     session: AsyncSession = Depends(get_session)):
     pass
 
 
 @event_router.post('/edit')
-async def event_edit():
+async def event_edit(user=Depends(elder_required)):
     pass
 
 
 @event_router.post('/delete')
-async def event_delete():
+async def event_delete(user=Depends(elder_required)):
     pass

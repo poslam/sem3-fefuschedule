@@ -31,6 +31,7 @@ def upgrade() -> None:
                     sa.Column('password', sa.TEXT(), nullable=True),
                     sa.Column('group', sa.Integer(), nullable=True),
                     sa.Column('subgroup', sa.TEXT(), nullable=True),
+                    sa.Column('type', sa.Enum('student', 'teacher', 'elder', 'moderator', 'superadmin', name='usertypes'), nullable=True),
                     sa.ForeignKeyConstraint(['group'], ['group.id'], ),
                     sa.PrimaryKeyConstraint('id')
                     )

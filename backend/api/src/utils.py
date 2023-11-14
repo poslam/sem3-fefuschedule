@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Union
 
 from database.database import get_session
-from database.models import Event, Facility, Group
+from database.models import Event, Facility, Group, SpecialEvent, Subgroup
 from dateutil import parser
 from fastapi import Depends, HTTPException
 from sqlalchemy import insert, select, update
@@ -108,20 +108,42 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
 
                 temp = (await get_schedule(group=group["num"], begin=period[0], end=period[1]))
 
-                # await session.execute(
-                #     update(Group).where(Group.num == group["num"]).values(
-                #         subgroups_count=temp["subgroups"])
-                # )
-                # await session.commit()
+                for subgroup_name in temp["subgroups"]:
+
+                    subgroup = (await session.execute(
+                        select(Subgroup)
+                        .where(Subgroup.name == subgroup_name)
+                        .where(Subgroup.group == group["name"])
+                    )).first()
+
+                    subgroup_insert = {
+                        "name": subgroup_name,
+                        "group": group["name"]
+                    }
+
+                    if subgroup == None:
+                        try:
+                            await session.execute(
+                                insert(Subgroup).values(subgroup_insert)
+                            )
+                            await session.commit()
+                        except Exception as e:
+                            print(e)
+                            await session.rollback()
+                            raise HTTPException(
+                                status_code=500, detail="server error")
 
                 for event in temp["events"]:
-                    
+
                     facility = (await session.execute(
                         select(Facility).where(
                             Facility.name == event["facility"])
                     )).first()
-                    
-                    capacity = max(facility[0].capacity, event["capacity"])
+
+                    if facility != None:
+                        capacity = max(facility[0].capacity, event["capacity"])
+                    else:
+                        capacity = event["capacity"]
 
                     event_db = await session.get(Event, event["event_id"])
 
@@ -149,25 +171,55 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                     else:
                         stmt = insert(Event).values(event_insert)
 
-                    if facility[0].spec != 'lecture':
+                    if facility is None:
 
-                        if capacity >= 50:
+                        max_num = max([x._mapping["num"] for x in (await session.execute(
+                            select(Facility.num)
+                        )).all()])
+
+                        if event["capacity"] >= 50:
                             spec = "lecture"
                         else:
                             spec = "lab_or_prac"
 
-                    try:
-                        await session.execute(
-                            update(Facility).where(Facility.name ==
-                                                    event["facility"])
-                            .values({"spec": spec,
-                                    "capacity": capacity})
-                        )
-                        await session.execute(stmt)
-                        await session.commit()
-                    except Exception as e:
-                        print(e)
-                        await session.rollback()
+                        try:
+                            await session.execute(
+                                insert(Facility).values({"name": event["facility"],
+                                                        "num": max_num + 1,
+                                                         "spec": spec,
+                                                         "capacity": event["capacity"]})
+                            )
+                            await session.commit()
+                            await session.commit()
+                        except Exception as e:
+                            print(e)
+                            await session.rollback()
+                            raise HTTPException(
+                                status_code=500, detail="server error")
+
+                    else:
+
+                        if facility[0].spec != 'lecture':
+
+                            if capacity >= 50:
+                                spec = "lecture"
+                            else:
+                                spec = "lab_or_prac"
+
+                        try:
+                            await session.execute(
+                                update(Facility).where(Facility.name ==
+                                                       event["facility"])
+                                .values({"spec": spec,
+                                        "capacity": capacity})
+                            )
+                            await session.execute(stmt)
+                            await session.commit()
+                        except Exception as e:
+                            print(e)
+                            await session.rollback()
+                            raise HTTPException(
+                                status_code=500, detail="server error")
 
                 await asyncio.sleep(0.5)
 
@@ -196,13 +248,26 @@ def facility_spec_parser(obj: dict):
 
 async def special_event_checker(obj: dict,
                                 session: AsyncSession = Depends(get_session)):
-    pass
-    
-    
+
+    special_event_rule = (await session.execute(
+        select(SpecialEvent)
+        .where(SpecialEvent.group == obj["group"])
+        .where(SpecialEvent.name == obj["event_name"])
+    )).first()
+
+    if special_event_rule != None:
+        obj["subgroup"] = ""
+
+    return obj
+
 
 async def event_filter(event: dict,
                        session: AsyncSession = Depends(get_session)):
-    pass
+
+    event = facility_spec_parser(event)
+    event = await special_event_checker(event, session)
+
+    return event
 
 
 # {
