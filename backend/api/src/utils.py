@@ -103,123 +103,128 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
         for period in time_periods:
 
             for group_raw in groups:
+                
+                try:
 
-                group = group_raw._mapping
+                    group = group_raw._mapping
 
-                temp = (await get_schedule(group=group["num"], begin=period[0], end=period[1]))
+                    temp = (await get_schedule(group=group["num"], begin=period[0], end=period[1]))
 
-                for subgroup_name in temp["subgroups"]:
+                    for subgroup_name in temp["subgroups"]:
 
-                    subgroup = (await session.execute(
-                        select(Subgroup)
-                        .where(Subgroup.name == subgroup_name)
-                        .where(Subgroup.group == group["name"])
-                    )).first()
+                        subgroup = (await session.execute(
+                            select(Subgroup)
+                            .where(Subgroup.name == subgroup_name)
+                            .where(Subgroup.group == group["name"])
+                        )).first()
 
-                    subgroup_insert = {
-                        "name": subgroup_name,
-                        "group": group["name"]
-                    }
+                        subgroup_insert = {
+                            "name": subgroup_name,
+                            "group": group["name"]
+                        }
 
-                    if subgroup == None:
-                        try:
-                            await session.execute(
-                                insert(Subgroup).values(subgroup_insert)
-                            )
-                            await session.commit()
-                        except Exception as e:
-                            print(e)
-                            await session.rollback()
-                            raise HTTPException(
-                                status_code=500, detail="server error")
+                        if subgroup == None:
+                            try:
+                                await session.execute(
+                                    insert(Subgroup).values(subgroup_insert)
+                                )
+                                await session.commit()
+                            except Exception as e:
+                                print(e)
+                                await session.rollback()
+                                raise HTTPException(
+                                    status_code=500, detail="server error")
 
-                for event in temp["events"]:
+                    for event in temp["events"]:
 
-                    facility = (await session.execute(
-                        select(Facility).where(
-                            Facility.name == event["facility"])
-                    )).first()
+                        facility = (await session.execute(
+                            select(Facility).where(
+                                Facility.name == event["facility"])
+                        )).first()
 
-                    if facility != None:
-                        capacity = max(facility[0].capacity, event["capacity"])
-                    else:
-                        capacity = event["capacity"]
-
-                    event_db = await session.get(Event, event["event_id"])
-
-                    event_insert = {
-                        "id": event["event_id"],
-                        "name": event["event_name"],
-                        "order": event["order"],
-                        "begin": parser.parse(event["begin"]),
-                        "end": parser.parse(event["end"]),
-                        "facility": event["facility"],
-                        "capacity": capacity,
-                        "teacher": event["teacher"],
-                        "group": event["group"],
-                        "subgroup": event["subgroup"]
-                    }
-
-                    if event_db is not None:
-                        if event_db.changed:
-                            continue
+                        if facility != None:
+                            capacity = max(facility[0].capacity, event["capacity"])
                         else:
-                            stmt = (update(Event)
-                                    .where(Event.id == event["event_id"])
-                                    .values(event_insert)
-                                    )
-                    else:
-                        stmt = insert(Event).values(event_insert)
+                            capacity = event["capacity"]
 
-                    if facility is None:
+                        event_db = await session.get(Event, event["event_id"])
 
-                        max_num = max([x._mapping["num"] for x in (await session.execute(
-                            select(Facility.num)
-                        )).all()])
+                        event_insert = {
+                            "id": event["event_id"],
+                            "name": event["event_name"],
+                            "order": event["order"],
+                            "begin": parser.parse(event["begin"]),
+                            "end": parser.parse(event["end"]),
+                            "facility": event["facility"],
+                            "capacity": capacity,
+                            "teacher": event["teacher"],
+                            "group": event["group"],
+                            "subgroup": event["subgroup"]
+                        }
 
-                        if event["capacity"] >= 50:
-                            spec = "lecture"
+                        if event_db is not None:
+                            if event_db.changed:
+                                continue
+                            else:
+                                stmt = (update(Event)
+                                        .where(Event.id == event["event_id"])
+                                        .values(event_insert)
+                                        )
                         else:
-                            spec = "lab_or_prac"
+                            stmt = insert(Event).values(event_insert)
 
-                        try:
-                            await session.execute(
-                                insert(Facility).values({"name": event["facility"],
-                                                        "num": max_num + 1,
-                                                         "spec": spec,
-                                                         "capacity": event["capacity"]})
-                            )
-                            await session.commit()
-                            await session.commit()
-                        except Exception as e:
-                            print(e)
-                            await session.rollback()
-                            raise HTTPException(
-                                status_code=500, detail="server error")
+                        if facility is None:
 
-                    else:
+                            max_num = max([x._mapping["num"] for x in (await session.execute(
+                                select(Facility.num)
+                            )).all()])
 
-                        if facility[0].spec != 'lecture':
-
-                            if capacity >= 50:
+                            if event["capacity"] >= 50:
                                 spec = "lecture"
                             else:
                                 spec = "lab_or_prac"
 
-                        try:
-                            await session.execute(
-                                update(Facility).where(Facility.name ==
-                                                       event["facility"])
-                                .values({"spec": spec,
-                                        "capacity": capacity})
-                            )
-                            await session.execute(stmt)
-                            await session.commit()
-                        except Exception as e:
-                            print(e)
-                            await session.rollback()
-                            raise HTTPException(
-                                status_code=500, detail="server error")
+                            try:
+                                await session.execute(
+                                    insert(Facility).values({"name": event["facility"],
+                                                            "num": max_num + 1,
+                                                            "spec": spec,
+                                                            "capacity": event["capacity"]})
+                                )
+                                await session.commit()
+                                await session.commit()
+                            except Exception as e:
+                                print(e)
+                                await session.rollback()
+                                raise HTTPException(
+                                    status_code=500, detail="server error")
+
+                        else:
+
+                            if facility[0].spec != 'lecture':
+
+                                if capacity >= 50:
+                                    spec = "lecture"
+                                else:
+                                    spec = "lab_or_prac"
+
+                            try:
+                                await session.execute(
+                                    update(Facility).where(Facility.name ==
+                                                        event["facility"])
+                                    .values({"spec": spec,
+                                            "capacity": capacity})
+                                )
+                                await session.execute(stmt)
+                                await session.commit()
+                            except Exception as e:
+                                print(e)
+                                await session.rollback()
+                                raise HTTPException(
+                                    status_code=500, detail="server error")
+                            
+                except Exception as e:
+                    print(e)
 
                 await asyncio.sleep(0.5)
 
