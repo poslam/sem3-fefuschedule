@@ -59,6 +59,7 @@ dependencies:
   animations: ^2.0.8
   dropdown_button2: ^3.0.0-beta.5
   flutter_login_yandex: ^0.0.4
+  intl: ^0.18.1
 
 dev_dependencies:
   flutter_test:

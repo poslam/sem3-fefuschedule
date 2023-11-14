@@ -2,6 +2,8 @@ import 'package:app/pages/login/login.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'pages/schedule/schedule.dart';
+
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _shellNavigationKey = GlobalKey<NavigatorState>();
 
@@ -18,7 +20,7 @@ final GoRouter router = GoRouter(
   routes: [
     GoRoute(
       path: "/login",
-      builder: (context, state) => Login(),
+      builder: (context, state) => Schedule(),
     ),
   ],
 );

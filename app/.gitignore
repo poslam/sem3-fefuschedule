@@ -46,3 +46,5 @@ app.*.map.json
 /windows/
 /lib/gen/
 /lib/i18n/
+
+/.vscode/
