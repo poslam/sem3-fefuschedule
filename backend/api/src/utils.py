@@ -159,7 +159,7 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                         if teacher is None:
                             try:
                                 await session.execute(
-                                    insert(Teacher).values({"id": uuid4(),
+                                    insert(Teacher).values({"id": str(uuid4()),
                                                             "name": event["teacher"]})
                                 )
                                 await session.commit()
