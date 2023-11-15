@@ -94,6 +94,9 @@ Future<void> main() async {
 
   LocaleSettings.useDeviceLocale();
 
+  scheduleController.fectchNewLessongs(
+      DateTime.now().subtract(Duration(days: 14)), DateTime.now().add(Duration(days: 14)));
+
   runApp(TranslationProvider(child: const App()));
 }
 

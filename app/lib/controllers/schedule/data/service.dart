@@ -1,5 +1,6 @@
 import 'dart:async';
 
+
 import 'dart:convert';
 
 
@@ -17,12 +18,13 @@ abstract class ScheduleService extends ChopperService {
 
     Response response = await _getGroupSchedule("schedule", begin, end, groupName);
 
+
     return convertResponse(response);
 
   }
 
 
-  @Get(path: "/view")
+  @Get(path: "/event/view")
 
   Future<Response> _getGroupSchedule(
 
@@ -49,6 +51,7 @@ FutureOr<ScheduleBackendResponse> convertResponse(Response response) async {
 
   convertertedResponse.statusCode = response.statusCode;
 
+
   convertertedResponse.rawResponse = response.body;
 
 
@@ -56,7 +59,9 @@ FutureOr<ScheduleBackendResponse> convertResponse(Response response) async {
 
     convertertedResponse.status = ScheduleBackendResponseStatus.failed;
 
+
     convertertedResponse.expectedResponse = [];
+
 
     return convertertedResponse;
 
@@ -66,6 +71,7 @@ FutureOr<ScheduleBackendResponse> convertResponse(Response response) async {
   try {
 
     String jsonBody = const Utf8Decoder().convert(response.bodyBytes);
+
 
     List<dynamic> json = jsonDecode(jsonBody);
 
@@ -79,13 +85,17 @@ FutureOr<ScheduleBackendResponse> convertResponse(Response response) async {
 
     convertertedResponse.expectedResponse = [];
 
+
     convertertedResponse.status = ScheduleBackendResponseStatus.cantConvertResponse;
+
 
     return convertertedResponse;
 
   }
 
+
   convertertedResponse.status = ScheduleBackendResponseStatus.success;
+
 
   return convertertedResponse;
 
@@ -102,6 +112,7 @@ class ScheduleBackendResponse {
 
   late final List<LessonBackendModel> expectedResponse;
 
+
   late final dynamic rawResponse;
 
 }
@@ -111,7 +122,9 @@ enum ScheduleBackendResponseStatus {
 
   success,
 
+
   failed,
+
 
   cantConvertResponse,
 
@@ -122,23 +135,33 @@ class LessonBackendModel {
 
   int? eventId;
 
+
   String? eventName;
+
 
   int? order;
 
+
   String? begin;
+
 
   String? end;
 
+
   String? facility;
+
 
   String? spec;
 
+
   int? capacity;
+
 
   String? teacher;
 
+
   String? group;
+
 
   String? subgroup;
 
@@ -172,23 +195,33 @@ class LessonBackendModel {
 
     eventId = json['event_id'];
 
+
     eventName = json['event_name'];
+
 
     order = json['order'];
 
+
     begin = json['begin'];
+
 
     end = json['end'];
 
+
     facility = json['facility'];
+
 
     spec = json['spec'];
 
+
     capacity = json['capacity'];
+
 
     teacher = json['teacher'];
 
+
     group = json['group'];
+
 
     subgroup = json['subgroup'];
 
@@ -199,27 +232,39 @@ class LessonBackendModel {
 
     final Map<String, dynamic> data = <String, dynamic>{};
 
+
     data['event_id'] = eventId;
+
 
     data['event_name'] = eventName;
 
+
     data['order'] = order;
+
 
     data['begin'] = begin;
 
+
     data['end'] = end;
+
 
     data['facility'] = facility;
 
+
     data['spec'] = spec;
+
 
     data['capacity'] = capacity;
 
+
     data['teacher'] = teacher;
+
 
     data['group'] = group;
 
+
     data['subgroup'] = subgroup;
+
 
     return data;
 

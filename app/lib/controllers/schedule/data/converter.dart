@@ -1,5 +1,6 @@
 import 'package:app/controllers/schedule/data/service.dart';
 
+
 import 'package:app/models/lesson.dart';
 
 
@@ -15,10 +16,12 @@ class ScheduleConverter {
 
     String beginStr = "${begin.year}-${begin.month}-${begin.day}T00:00:00";
 
+
     String endStr = "${end.year}-${end.month}-${end.day}T00:00:00";
 
 
     ScheduleBackendResponse backendResponse;
+
 
     ScheduleResponse response = ScheduleResponse();
 
@@ -38,6 +41,7 @@ class ScheduleConverter {
 
       response.backendResponse = backendResponse;
 
+
       return response;
 
     }
@@ -45,11 +49,15 @@ class ScheduleConverter {
 
     List<LessonViewModel> lessons = convertLessons(backendResponse.expectedResponse).toList();
 
+
     response.status = ScheduleResponseStatus.sucsess;
+
 
     response.lessons = lessons;
 
+
     response.backendResponse = backendResponse;
+
 
     return response;
 
@@ -67,27 +75,33 @@ Iterable<LessonViewModel> convertLessons(List<LessonBackendModel> lessons) sync*
 
     viewModel.eventId = lesson.eventId ?? -1;
 
+
     viewModel.eventName = lesson.eventName ?? "#####";
+
 
     viewModel.order = lesson.order ?? -1;
 
 
     viewModel.begin = DateTime.tryParse(lesson.begin ?? "") ?? DateTime.now();
 
+
     viewModel.end = DateTime.tryParse(lesson.end ?? "") ?? DateTime.now();
 
 
     viewModel.facility = lesson.facility ?? "#####";
+
 
     viewModel.spec = lesson.spec ?? "#####";
 
 
     viewModel.capacity = lesson.capacity ?? -1;
 
+
     viewModel.teacher = lesson.teacher ?? "#####";
 
 
     viewModel.group = lesson.group ?? "#####";
+
 
     viewModel.subgroup = lesson.subgroup ?? "0";
 
@@ -115,6 +129,7 @@ class ScheduleResponse {
 enum ScheduleResponseStatus {
 
   sucsess,
+
 
   newtworkTrouble,
 

@@ -44,6 +44,7 @@ abstract class ScheduleWidgetControllerStore with Store {
   int get currentWeekOffset => _weekOffset;
   int _weekOffset = 0;
   int _dayOffset = 0;
+  DateTime get anchorMonday => _anchorMonday;
   DateTime _anchorMonday = DateTime.now();
 
   @action
