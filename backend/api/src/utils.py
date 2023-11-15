@@ -262,8 +262,8 @@ def event_spec_parser(obj: dict):
 
     try:
         spec = obj["spec"].name
-    except BaseException:
-        raise HTTPException(status_code=500, detail="incorrect spec")
+    except Exception as e:
+        spec = 'unknown'
 
     if spec == "lab_or_prac":
         spec_new = "Практическое или лабораторное занятие"
@@ -285,7 +285,7 @@ def facility_spec_parser(obj: dict):
     try:
         spec = obj["spec"].name
     except BaseException:
-        raise HTTPException(status_code=500, detail="incorrect spec")
+        spec = 'unknown'
 
     if spec == "lab_or_prac":
         spec_new = "Обычная аудитория"
