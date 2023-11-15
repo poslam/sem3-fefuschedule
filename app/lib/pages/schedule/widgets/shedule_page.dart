@@ -1,55 +1,73 @@
+import 'package:app/controllers/schedule/controller.dart';
 import 'package:app/pages/schedule/widgets/date_picker.dart';
 import 'package:app/pages/schedule/widgets/week_day_indicator.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:get_it/get_it.dart';
 
 class ShedulePage extends StatelessWidget {
-  const ShedulePage({super.key});
+  ShedulePage({super.key});
+
+  final ScheduleWidgetController controller = GetIt.I<ScheduleWidgetController>();
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+          padding: const EdgeInsets.only(left: 4.0, right: 4.0),
           child: WeekDayIndicator(),
         ),
         Padding(
           padding: const EdgeInsets.only(left: 4.0, right: 4.0, bottom: 8.0),
           child: DatePicker(),
         ),
-        EventCard(),
-        Divider(
-          color: Theme.of(context).colorScheme.secondary,
-        ),
-        EventCard(),
-        Divider(
-          color: Theme.of(context).colorScheme.secondary,
-        ),
-        EventCard(),
-        Divider(
-          color: Theme.of(context).colorScheme.secondary,
-        ),
-        EventCard(),
-        Divider(
-          color: Theme.of(context).colorScheme.secondary,
-        ),
-        EventCard(),
-        Divider(
-          color: Theme.of(context).colorScheme.secondary,
-        ),
-        EventCard(),
-        Divider(
-          color: Theme.of(context).colorScheme.secondary,
-        ),
-        EventCard(),
-        Divider(
-          color: Theme.of(context).colorScheme.secondary,
-        ),
-        EventCard(),
-        Divider(
-          color: Theme.of(context).colorScheme.secondary,
-        ),
-        EventCard(),
+        Observer(builder: (context) {
+          return Flexible(
+            child: PageView.builder(
+                controller: controller.datePageScrollController,
+                onPageChanged: (index) => controller.setDayOffSet(index),
+                itemBuilder: (context, index) {
+                  return ListView(
+                    children: [
+                      Text(index.toString()),
+                      Divider(
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                      EventCard(),
+                      Divider(
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                      EventCard(),
+                      Divider(
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                      EventCard(),
+                      Divider(
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                      EventCard(),
+                      Divider(
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                      EventCard(),
+                      Divider(
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                      EventCard(),
+                      Divider(
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                      EventCard(),
+                      Divider(
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                      EventCard()
+                    ],
+                  );
+                }),
+          );
+        }),
       ],
     );
   }
