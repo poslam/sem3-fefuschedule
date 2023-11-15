@@ -44,6 +44,7 @@ async def view_structure(type: str,  # groups, facilities, teachers
 
         groups_raw = (await session.execute(
             select(Group.name, Group.num)
+            .order_by(Group.name)
         )).all()
 
         result = []
@@ -53,7 +54,9 @@ async def view_structure(type: str,  # groups, facilities, teachers
             group = group_raw._mapping
 
             subgroups = [x._mapping["name"] for x in (await session.execute(
-                select(Subgroup.name).where(Subgroup.group == group["name"])
+                select(Subgroup.name)
+                .where(Subgroup.group == group["name"])
+                .order_by(Subgroup.name)
             )).all()]
 
             result.append({"group": group["name"],

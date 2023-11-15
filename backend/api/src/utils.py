@@ -1,9 +1,11 @@
 import asyncio
 from datetime import datetime, timedelta
 from typing import Union
+from uuid import uuid4
 
 from database.database import get_session
-from database.models import Event, Facility, Group, SpecialEvent, Subgroup
+from database.models import (Event, Facility, Group, SpecialEvent, Subgroup,
+                             Teacher)
 from dateutil import parser
 from fastapi import Depends, HTTPException
 from sqlalchemy import insert, select, update
@@ -103,37 +105,12 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
         for period in time_periods:
 
             for group_raw in groups:
-                
+
                 try:
 
                     group = group_raw._mapping
 
                     temp = (await get_schedule(group=group["num"], begin=period[0], end=period[1]))
-
-                    for subgroup_name in temp["subgroups"]:
-
-                        subgroup = (await session.execute(
-                            select(Subgroup)
-                            .where(Subgroup.name == subgroup_name)
-                            .where(Subgroup.group == group["name"])
-                        )).first()
-
-                        subgroup_insert = {
-                            "name": subgroup_name,
-                            "group": group["name"]
-                        }
-
-                        if subgroup == None:
-                            try:
-                                await session.execute(
-                                    insert(Subgroup).values(subgroup_insert)
-                                )
-                                await session.commit()
-                            except Exception as e:
-                                print(e)
-                                await session.rollback()
-                                raise HTTPException(
-                                    status_code=500, detail="server error")
 
                     for event in temp["events"]:
 
@@ -143,7 +120,8 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                         )).first()
 
                         if facility != None:
-                            capacity = max(facility[0].capacity, event["capacity"])
+                            capacity = max(
+                                facility[0].capacity, event["capacity"])
                         else:
                             capacity = event["capacity"]
 
@@ -173,6 +151,22 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                         else:
                             stmt = insert(Event).values(event_insert)
 
+                        teacher = (await session.execute(
+                            select(Teacher).where(
+                                Teacher.name == event["teacher"])
+                        )).first()
+
+                        if teacher is None:
+                            try:
+                                await session.execute(
+                                    insert(Teacher).values({"id": uuid4(),
+                                                            "name": event["teacher"]})
+                                )
+                                await session.commit()
+                            except Exception as e:
+                                print(e)
+                                await session.rollback()
+
                         if facility is None:
 
                             max_num = max([x._mapping["num"] for x in (await session.execute(
@@ -188,8 +182,8 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                                 await session.execute(
                                     insert(Facility).values({"name": event["facility"],
                                                             "num": max_num + 1,
-                                                            "spec": spec,
-                                                            "capacity": event["capacity"]})
+                                                             "spec": spec,
+                                                             "capacity": event["capacity"]})
                                 )
                                 await session.commit()
                                 await session.commit()
@@ -211,7 +205,7 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                             try:
                                 await session.execute(
                                     update(Facility).where(Facility.name ==
-                                                        event["facility"])
+                                                           event["facility"])
                                     .values({"spec": spec,
                                             "capacity": capacity})
                                 )
@@ -222,7 +216,32 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                                 await session.rollback()
                                 raise HTTPException(
                                     status_code=500, detail="server error")
-                            
+                                
+                    for subgroup_name in temp["subgroups"]:
+
+                        subgroup = (await session.execute(
+                            select(Subgroup)
+                            .where(Subgroup.name == subgroup_name)
+                            .where(Subgroup.group == group["name"])
+                        )).first()
+
+                        subgroup_insert = {
+                            "name": subgroup_name,
+                            "group": group["name"]
+                        }
+
+                        if subgroup == None:
+                            try:
+                                await session.execute(
+                                    insert(Subgroup).values(subgroup_insert)
+                                )
+                                await session.commit()
+                            except Exception as e:
+                                print(e)
+                                await session.rollback()
+                                raise HTTPException(
+                                    status_code=500, detail="server error")
+
                 except Exception as e:
                     print(e)
 

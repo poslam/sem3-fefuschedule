@@ -37,7 +37,8 @@ async def schedule(begin: str, end: str,
                    Event.subgroup)
             .where(Facility.name == Event.facility)
             .where(Event.begin >= begin)
-            .where(Event.end <= end))
+            .where(Event.end <= end)
+            .order_by(Event.begin))
 
     if facility_name is not None and all(
             x is None for x in [teacher_name, group_name]):
