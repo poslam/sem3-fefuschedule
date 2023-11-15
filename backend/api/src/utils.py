@@ -1,14 +1,20 @@
 import asyncio
 from datetime import datetime, timedelta
 from typing import Union
+from uuid import uuid4
 
 from database.database import get_session
-from database.models import Event, Facility, Group
+from database.models import (Event, Facility, Group, SpecialEvent, Subgroup,
+                             Teacher)
 from dateutil import parser
 from fastapi import Depends, HTTPException
 from sqlalchemy import insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.external import get_schedule
+
+
+def time():
+    return datetime.utcnow()+timedelta(hours=10)
 
 
 async def event_converter(obj: Union[dict, list]):
@@ -100,101 +106,144 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
 
             for group_raw in groups:
 
-                group = group_raw._mapping
+                try:
 
-                temp = (await get_schedule(group=group["num"], begin=period[0], end=period[1]))
+                    group = group_raw._mapping
 
-                await session.execute(
-                    update(Group).where(Group.num == group["num"]).values(
-                        subgroups_count=temp["subgroups"])
-                )
-                await session.commit()
+                    temp = (await get_schedule(group=group["num"], begin=period[0], end=period[1]))
 
-                for event in temp["events"]:
+                    for event in temp["events"]:
 
-                    event_db = await session.get(Event, event["event_id"])
+                        facility = (await session.execute(
+                            select(Facility).where(
+                                Facility.name == event["facility"])
+                        )).first()
 
-                    event_insert = {
-                        "id": event["event_id"],
-                        "name": event["event_name"],
-                        "order": event["order"],
-                        "begin": parser.parse(event["begin"]),
-                        "end": parser.parse(event["end"]),
-                        "facility": event["facility"],
-                        "capacity": event["capacity"],
-                        "teacher": event["teacher"],
-                        "group": event["group"],
-                        "subgroup": event["subgroup"]
-                    }
-
-                    if event_db is not None:
-                        if event_db.changed:
-                            continue
+                        if facility != None:
+                            capacity = max(
+                                facility[0].capacity, event["capacity"])
                         else:
-                            stmt = (update(Event)
-                                    .where(Event.id == event["event_id"])
-                                    .values(event_insert)
-                                    )
-                    else:
-                        stmt = insert(Event).values(event_insert)
+                            capacity = event["capacity"]
 
-                    facility = (await session.execute(
-                        select(Facility).where(
-                            Facility.name == event["facility"])
-                    )).first()
+                        event_db = await session.get(Event, event["event_id"])
 
-                    if facility is None:
+                        event_insert = {
+                            "id": event["event_id"],
+                            "name": event["event_name"],
+                            "order": event["order"],
+                            "begin": parser.parse(event["begin"]),
+                            "end": parser.parse(event["end"]),
+                            "facility": event["facility"],
+                            "capacity": capacity,
+                            "teacher": event["teacher"],
+                            "group": event["group"],
+                            "subgroup": event["subgroup"]
+                        }
 
-                        max_num = max([x._mapping["num"] for x in (await session.execute(
-                            select(Facility.num)
-                        )).all()])
-
-                        if event["capacity"] >= 40:
-                            spec = "lecture"
+                        if event_db is not None:
+                            if event_db.changed:
+                                continue
+                            else:
+                                stmt = (update(Event)
+                                        .where(Event.id == event["event_id"])
+                                        .values(event_insert)
+                                        )
                         else:
-                            spec = "lab_or_prac"
+                            stmt = insert(Event).values(event_insert)
 
-                        try:
-                            await session.execute(
-                                insert(Facility).values({"name": event["facility"],
-                                                        "num": max_num + 1,
-                                                         "spec": spec,
-                                                         "capacity": event["capacity"]})
-                            )
-                            await session.commit()
-                        except Exception as e:
-                            await session.rollback()
-                            print(e)
+                        teacher = (await session.execute(
+                            select(Teacher).where(
+                                Teacher.name == event["teacher"])
+                        )).first()
 
-                    else:
+                        if teacher is None:
+                            try:
+                                await session.execute(
+                                    insert(Teacher).values({"id": str(uuid4()),
+                                                            "name": event["teacher"]})
+                                )
+                                await session.commit()
+                            except Exception as e:
+                                print(e)
+                                await session.rollback()
 
-                        capacity = max(facility[0].capacity, event["capacity"])
+                        if facility is None:
 
-                        if facility[0].spec != 'lecture':
+                            max_num = max([x._mapping["num"] for x in (await session.execute(
+                                select(Facility.num)
+                            )).all()])
 
-                            if capacity >= 40:
+                            if event["capacity"] >= 50:
                                 spec = "lecture"
                             else:
                                 spec = "lab_or_prac"
 
-                        try:
-                            await session.execute(
-                                update(Facility).where(Facility.name ==
-                                                       event["facility"])
-                                .values({"spec": spec,
-                                        "capacity": capacity})
-                            )
-                            await session.commit()
-                        except Exception as e:
-                            print(e)
-                            await session.rollback()
+                            try:
+                                await session.execute(
+                                    insert(Facility).values({"name": event["facility"],
+                                                            "num": max_num + 1,
+                                                             "spec": spec,
+                                                             "capacity": event["capacity"]})
+                                )
+                                await session.commit()
+                                await session.commit()
+                            except Exception as e:
+                                print(e)
+                                await session.rollback()
+                                raise HTTPException(
+                                    status_code=500, detail="server error")
 
-                    try:
-                        await session.execute(stmt)
-                        await session.commit()
-                    except Exception as e:
-                        print(e)
-                        await session.rollback()
+                        else:
+
+                            if facility[0].spec != 'lecture':
+
+                                if capacity >= 50:
+                                    spec = "lecture"
+                                else:
+                                    spec = "lab_or_prac"
+
+                            try:
+                                await session.execute(
+                                    update(Facility).where(Facility.name ==
+                                                           event["facility"])
+                                    .values({"spec": spec,
+                                            "capacity": capacity})
+                                )
+                                await session.execute(stmt)
+                                await session.commit()
+                            except Exception as e:
+                                print(e)
+                                await session.rollback()
+                                raise HTTPException(
+                                    status_code=500, detail="server error")
+                                
+                    for subgroup_name in temp["subgroups"]:
+
+                        subgroup = (await session.execute(
+                            select(Subgroup)
+                            .where(Subgroup.name == subgroup_name)
+                            .where(Subgroup.group == group["name"])
+                        )).first()
+
+                        subgroup_insert = {
+                            "name": subgroup_name,
+                            "group": group["name"]
+                        }
+
+                        if subgroup == None:
+                            try:
+                                await session.execute(
+                                    insert(Subgroup).values(subgroup_insert)
+                                )
+                                await session.commit()
+                            except Exception as e:
+                                print(e)
+                                await session.rollback()
+                                raise HTTPException(
+                                    status_code=500, detail="server error")
+
+                except Exception as e:
+                    print(e)
 
                 await asyncio.sleep(0.5)
 
@@ -219,6 +268,30 @@ def facility_spec_parser(obj: dict):
     obj["spec"] = spec_new
 
     return obj
+
+
+async def special_event_checker(obj: dict,
+                                session: AsyncSession = Depends(get_session)):
+
+    special_event_rule = (await session.execute(
+        select(SpecialEvent)
+        .where(SpecialEvent.group == obj["group"])
+        .where(SpecialEvent.name == obj["event_name"])
+    )).first()
+
+    if special_event_rule != None:
+        obj["subgroup"] = ""
+
+    return obj
+
+
+async def event_filter(event: dict,
+                       session: AsyncSession = Depends(get_session)):
+
+    event = facility_spec_parser(event)
+    event = await special_event_checker(event, session)
+
+    return event
 
 
 # {
@@ -247,4 +320,4 @@ def facility_spec_parser(obj: dict):
 #         "teacher": "Месенев Павел Ростиславович",
 #         "teacher_degree": "",
 #         "userId": 21465
-#     },
+# }

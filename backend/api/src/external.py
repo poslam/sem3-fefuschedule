@@ -33,7 +33,6 @@ async def event_converter(obj: Union[dict, list]):
                 status_code=400, detail="incorrect event format")
 
     elif isinstance(obj, list):
-
         result = []
 
         for event_raw in obj:
@@ -91,9 +90,33 @@ async def get_schedule(begin: str, end: str,
     req = (await client.get(f"{HOST}/schedule/get", params=params, headers=headers,
                             timeout=600)).json()
 
+    d = dict()
+
     if "events" in req:
+        subgroups = req["subgroups"]
+
+        if isinstance(subgroups, dict):
+            subgroups = subgroups.values()
+
         return {"events": await event_converter(req["events"]),
-                "subgroups": len([x for x in req["subgroups"] if len(x) > 0])}
+                "subgroups": [x for x in subgroups if x not in ["", " ", None]]}
 
     else:
         return req
+
+
+async def get_user_info(ya_token: str):
+
+    client = httpx.AsyncClient()
+
+    headers = {
+        "Authorization": f"OAuth {ya_token}"
+    }
+
+    req = (await client.get("https://login.yandex.ru/info", headers=headers))
+
+    if req.status_code == 200:
+        return req.json()
+
+    else:
+        raise HTTPException(status_code=400, detail="incorrect ya_token")
