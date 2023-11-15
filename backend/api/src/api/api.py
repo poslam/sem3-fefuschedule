@@ -1,16 +1,17 @@
 from datetime import datetime, timedelta
 
 from database.database import get_session
-from database.models import Event, Facility, Group, Subgroup, Teacher
+from database.models import Event, Facility, Group, SpecialEvent, Subgroup, Teacher
 from dateutil import parser
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.api.auth import auth_router, login_required, shared
+from src.api.auth import (auth_router, login_required, moderator_required,
+                          shared)
 from src.api.event import event_router
 from src.api.install import install_router
 from src.api.user import user_router
-from src.utils import event_filter, event_updater, facility_spec_parser
+from src.utils import event_updater, facility_spec_parser
 
 api_router = APIRouter(
     prefix="/api"
@@ -156,3 +157,40 @@ async def check_facility(day: str,
                            "capacity": facility["capacity"]})
 
     return result
+
+
+@api_router.post("/special_event/add")
+async def special_event_add(request: Request,
+                            user=Depends(moderator_required),
+                            session: AsyncSession = Depends(get_session)):
+    try:
+        data = await request.json()
+
+        event_name = data["event_name"]
+        group_name = data["group"]
+
+    except:
+        raise HTTPException(status_code=400, detail="incorrect request")
+
+    group = (await session.execute(
+        select(Group).where(Group.name == group_name)
+    )).first()
+
+    if group == None:
+        raise HTTPException(status_code=400, detail="group not found")
+    
+    special_event_insert = {
+        "name": event_name,
+        "group": group_name
+    }
+    
+    try:
+        await session.execute(
+            insert(SpecialEvent).values(special_event_insert)
+        )
+        await session.commit()
+        return {"detail": "special_event add success"}
+    except Exception as e:
+        print(e)
+        await session.rollback()
+        raise HTTPException(status_code=500, detail="server error")

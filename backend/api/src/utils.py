@@ -124,6 +124,15 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                                 facility[0].capacity, event["capacity"])
                         else:
                             capacity = event["capacity"]
+                            
+                        if event["spec"] in ["Лабораторные работы", "Практические занятия"]:
+                            spec = "lab_or_prac"
+
+                        elif event["spec"] == "Лекционные занятия":
+                            spec = "lecture"
+
+                        else:
+                            spec = "unknown"
 
                         event_db = await session.get(Event, event["event_id"])
 
@@ -134,6 +143,7 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                             "begin": parser.parse(event["begin"]),
                             "end": parser.parse(event["end"]),
                             "facility": event["facility"],
+                            "spec": spec,
                             "capacity": capacity,
                             "teacher": event["teacher"],
                             "group": event["group"],
@@ -216,7 +226,7 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                                 await session.rollback()
                                 raise HTTPException(
                                     status_code=500, detail="server error")
-                                
+
                     for subgroup_name in temp["subgroups"]:
 
                         subgroup = (await session.execute(
@@ -246,6 +256,28 @@ async def event_updater(session: AsyncSession = Depends(get_session)):
                     print(e)
 
                 await asyncio.sleep(0.5)
+
+
+def event_spec_parser(obj: dict):
+
+    try:
+        spec = obj["spec"].name
+    except BaseException:
+        raise HTTPException(status_code=500, detail="incorrect spec")
+
+    if spec == "lab_or_prac":
+        spec_new = "Практическое или лабораторное занятие"
+
+    elif spec == "lecture":
+        spec_new = "Лекционное занятие"
+
+    else:
+        spec_new = "Неизвестно"
+
+    obj = dict(obj)
+    obj["spec"] = spec_new
+
+    return obj
 
 
 def facility_spec_parser(obj: dict):
@@ -288,7 +320,7 @@ async def special_event_checker(obj: dict,
 async def event_filter(event: dict,
                        session: AsyncSession = Depends(get_session)):
 
-    event = facility_spec_parser(event)
+    event = event_spec_parser(event)
     event = await special_event_checker(event, session)
 
     return event
