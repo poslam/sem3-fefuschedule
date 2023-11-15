@@ -19,11 +19,7 @@ jobs:
         with:
           channel: "master"
           cache: true
-      - run: cd ./app
-      - run: flutter pub get
-      - run: dart run build_runner build
-      - run: dart run slang
-      - run: flutter build apk --split-per-abi
+      - run: cd ./app && flutter pub get &&  dart run build_runner build && dart run slang && flutter build apk --split-per-abi
       - run: mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/app/outputs/flutter-apk/fefu_schedule.apk
 
       - name: 📂Upload release
