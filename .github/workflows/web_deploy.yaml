@@ -23,11 +23,8 @@ jobs:
           channel: "master"
 
           cache: true
-      - run: cd ./app
-      - run: pwd
-      - run: flutter pub get
-      - run: flutter build web --web-renderer canvaskit --base-href "/web/"
-      - run: flutter build apk --split-per-abi 
+      - run: cd ./app && flutter pub get && flutter build web --web-renderer canvaskit --base-href "/web/"
+      
 
       - name: 📂 Sync files
         uses: garygrossgarten/github-action-scp@release
@@ -36,4 +33,4 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           remote: /home/fefuschedule/web/
-          local: build/web/
+          local: /app/build/web/
