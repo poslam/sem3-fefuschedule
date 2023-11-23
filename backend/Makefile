@@ -1,14 +1,13 @@
 run:
-	docker compose unpause fefuschedule-api
+	docker compose unpause api
 
 stop:
-	docker compose pause fefuschedule-api
+	docker compose pause api
 
 update:
-	cd api
-	docker compose up -d --no-deps --build fefuschedule-api
-	docker compose exec -w /api fefuschedule-api poetry run python -m alembic upgrade head
+	docker compose up -d --no-deps --build api
+	docker compose exec -w /api api poetry run python -m alembic upgrade head
 
 start:
 	docker compose up --build -d
-	docker compose exec -w /api fefuschedule-api poetry run python -m alembic upgrade head
+	docker compose exec -w /api api poetry run python -m alembic upgrade head

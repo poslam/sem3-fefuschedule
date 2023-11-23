@@ -21,3 +21,24 @@ X_REQUESTED_WITH = os.environ.get("X-Requested-With")
 SECRET_AUTH = os.environ.get("SECRET_AUTH")
 AUTH_TOKEN_LIFE = os.environ.get("AUTH_TOKEN_LIFE")
 ALGORITHM = os.environ.get("ALGORITHM")
+
+
+# template
+
+# DB_HOST = 
+# DB_PORT = 
+# DB_NAME = 
+# DB_USER = 
+# DB_PASS = 
+
+# HOST = 
+
+# STATIC_PATH = 
+
+# COOKIE = 
+# X_CSRF_TOKEN = 
+# X_REQUESTED_WITH =
+
+# SECRET_AUTH = 
+# AUTH_TOKEN_LIFE = 
+# ALGORITHM = 

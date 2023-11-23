@@ -1,16 +1,20 @@
 services:
 
-    fefuschedule-database:
-        image: fefuschedule-database
-        build: ./database
+    database:
+        image: postgres:16
+        ports: 
+            - 5432:5432
         environment:
             POSTGRES_HOST_AUTH_METHOD: trust
 
-    fefuschedule-api:
+    api:
         links:
-            - fefuschedule-database
-       
-        image: fefuschedule-api
+            - database
+
+        env_file:
+            - .env
+
+        image: api
         ports:
             - 8001:8001
         build: ./api

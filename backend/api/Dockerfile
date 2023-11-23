@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.11-slim-buster
 
 ENV POETRY_HOME=/opt/poetry
 ENV POETRY_VENV=/opt/poetry-venv
